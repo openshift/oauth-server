@@ -4,8 +4,7 @@ import (
 	"net/http"
 )
 
-// mux  is a standard mux interface for HTTP
-type mux interface {
+type Mux interface {
 	Handle(pattern string, handler http.Handler)
 	HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request))
 }
