@@ -3,10 +3,14 @@ package oauth_server
 import (
 	"errors"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	genericapiserveroptions "k8s.io/apiserver/pkg/server/options"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
 
 	osinv1 "github.com/openshift/api/osin/v1"
 	"github.com/openshift/library-go/pkg/config/helpers"
@@ -14,7 +18,7 @@ import (
 	"github.com/openshift/oauth-server/pkg/oauthserver"
 
 	// for metrics
-	_ "k8s.io/kubernetes/pkg/client/metrics/prometheus"
+	_ "github.com/openshift/library-go/pkg/controller/metrics"
 )
 
 func RunOsinServer(osinConfig *osinv1.OsinServerConfig, stopCh <-chan struct{}) error {
@@ -36,7 +40,9 @@ func RunOsinServer(osinConfig *osinv1.OsinServerConfig, stopCh <-chan struct{}) 
 }
 
 func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig) (*oauthserver.OAuthServerConfig, error) {
-	genericConfig := genericapiserver.NewRecommendedConfig(legacyscheme.Codecs)
+	scheme := runtime.NewScheme()
+	metav1.AddToGroupVersion(scheme, corev1.SchemeGroupVersion)
+	genericConfig := genericapiserver.NewRecommendedConfig(serializer.NewCodecFactory(scheme))
 
 	servingOptions, err := serving.ToServingOptions(osinConfig.ServingInfo)
 	if err != nil {
