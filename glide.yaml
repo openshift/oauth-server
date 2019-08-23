@@ -36,8 +36,6 @@ import:
   version: fababb0555f21315d1a34af6615a16eaab44396b
 - package: github.com/gorilla/sessions
   version: a3acf13e802c358d65f249324d14ed24aac11370
-- package: github.com/apcera/gssapi
-  version: release-2.6.3
 - package: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
 - package: bitbucket.org/ww/goautoneg

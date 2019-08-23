@@ -1,13 +1,11 @@
-hash: 6336e9e60cf8443fa4b5608d6416362647054b9d100b7e4e481decde011c9b06
-updated: 2019-07-24T09:06:50.969650695-04:00
+hash: 107b666dbeb44d119f5339b639f6ee4d028749d2992e697ab8121f018f6f7e02
+updated: 2019-08-19T09:50:49.77994293+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
   vcs: hg
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
-- name: github.com/apcera/gssapi
-  version: 5fb4217df13b8e6878046fe1e5c10e560e1b86dc
 - name: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
   subpackages:
@@ -193,7 +191,7 @@ imports:
 - name: github.com/NYTimes/gziphandler
   version: 56545f4a5d46df9a6648819d1664c3a03a13ffdb
 - name: github.com/openshift/api
-  version: d75a161a0f4ded1815ec24321fc1f8609c255cdb
+  version: a94e914914f4228d0bcba6fc8a22614c5f5e2dad
   subpackages:
   - config/v1
   - oauth/v1
@@ -202,7 +200,7 @@ imports:
   - route/v1
   - user/v1
 - name: github.com/openshift/client-go
-  version: a85ea6a6b3a5d2dbe41582ee35695dd4683e1f02
+  version: 5a5508328169b8a6992ea4ef711add89ddce3c6d
   subpackages:
   - oauth/clientset/versioned
   - oauth/clientset/versioned/fake
@@ -217,7 +215,7 @@ imports:
   - user/clientset/versioned/typed/user/v1
   - user/clientset/versioned/typed/user/v1/fake
 - name: github.com/openshift/library-go
-  version: 2ccf23323324d7fd30f5c684e8aeed4ddb323107
+  version: 97bb8b699c927fbdb7a80d48865d89acc3980d94
   subpackages:
   - pkg/apiserver/httprequest
   - pkg/authentication/bootstrapauthenticator
@@ -317,7 +315,7 @@ imports:
   subpackages:
   - rate
 - name: google.golang.org/appengine
-  version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
+  version: fb139bde60fa77cede04f226b4d5a3cf68dcce27
   subpackages:
   - internal
   - internal/base
@@ -749,5 +747,5 @@ imports:
   - typed
   - value
 - name: sigs.k8s.io/yaml
-  version: 4cd0c284b15f1735b8cc247df097d262b8903f9f
+  version: fd68e9863619f6ec2fdd8625fe1f02e7c877e480
 testImports: []
