@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -63,9 +62,6 @@ func (s *SecureServingInfo) Serve(handler http.Handler, shutdownTimeout time.Dur
 
 	if s.HTTP1Only {
 		klog.Info("Forcing use of http/1.1 only")
-		if err := os.Setenv("GODEBUG", "http2server=0"); err != nil {
-			return nil, err
-		}
 		secureServer.TLSConfig.NextProtos = []string{"http/1.1"}
 	}
 
