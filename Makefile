@@ -19,4 +19,4 @@ GO_BUILD_PACKAGES :=$(strip \
 # $2 - Dockerfile path
 # $3 - context directory for image build
 # It will generate target "image-$(1)" for builing the image an binding it as a prerequisite to target "images".
-$(call build-image,origin-$(notdir $(GO_PACKAGE)),./images/Dockerfile,.)
+$(call build-image,origin-oauth-server,origin-oauth-server,./images/Dockerfile,.)
