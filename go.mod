@@ -46,9 +46,9 @@ require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
 	github.com/onsi/ginkgo v1.9.0 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
-	github.com/openshift/api v0.0.0-20190814194116-a94e914914f4
-	github.com/openshift/client-go v0.0.0-20190813201236-5a5508328169
-	github.com/openshift/library-go v0.0.0-20190829104452-2cb04072d0f5
+	github.com/openshift/api prebase-0.1.16
+	github.com/openshift/client-go prebase-0.1.16
+	github.com/openshift/library-go prebase-0.1.16
 	github.com/pborman/uuid v0.0.0-20150603214016-ca53cad383ca // indirect
 	github.com/pkg/profile v1.3.0 // indirect
 	github.com/prometheus/client_golang v0.9.2
@@ -74,11 +74,11 @@ require (
 	gopkg.in/ldap.v2 v2.5.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20150622162204-20b71e5b60d7 // indirect
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0 // indirect
-	k8s.io/api v0.0.0-20190313235455-40a48860b5ab
-	k8s.io/apimachinery v0.0.0-20190313205120-d7deff9243b1
-	k8s.io/apiserver v0.0.0-20190313205120-8b27c41bdbb1
-	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/component-base v0.0.0-20190314000054-4a91899592f4
+	k8s.io/api kubernetes-1.16.0
+	k8s.io/apimachinery kubernetes-1.16.0
+	k8s.io/apiserver kubernetes-1.16.0
+	k8s.io/client-go kubernetes-1.16.0
+	k8s.io/component-base kubernetes-1.16.0
 	k8s.io/klog v0.0.0-20181108234604-8139d8cb77af
 	k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30 // indirect
 	k8s.io/utils v0.0.0-20190221042446-c2654d5206da // indirect
@@ -89,5 +89,4 @@ require (
 replace (
 	github.com/RangelReale/osin => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
 	github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20190724130521-fababb0555f2
-	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20190724130521-1424bdb7847b
 )
