@@ -58,7 +58,7 @@ func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig) (*oauthserver.OAu
 		return nil, err
 	}
 	// the oauth-server must only run in http1 to avoid http2 connection re-use problems when improperly re-using a wildcard certificate
-	genericConfig.Config.SecureServing.HTTP1Only = true
+	genericConfig.Config.SecureServing.DisableHTTP2 = true
 
 	authenticationOptions := genericapiserveroptions.NewDelegatingAuthenticationOptions()
 	authenticationOptions.ClientCert.ClientCA = osinConfig.ServingInfo.ClientCA
