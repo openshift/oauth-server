@@ -8,7 +8,7 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/RangelReale/osin v0.0.0 => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
 github.com/RangelReale/osin
-# github.com/RangelReale/osincli v0.0.0 => github.com/openshift/osincli v0.0.0-20190724130521-fababb0555f2
+# github.com/RangelReale/osincli v0.0.0 => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 github.com/RangelReale/osincli
 # github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
 github.com/beorn7/perks/quantile
