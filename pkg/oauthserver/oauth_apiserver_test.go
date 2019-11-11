@@ -16,7 +16,7 @@ func TestGetDefaultSessionSecrets(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	if len(secrets) != 2 {
-		t.Errorf("Unexpected 2 secrets, got: %#v", secrets)
+		t.Errorf("Expected 2 secrets, got: %#v", secrets)
 	}
 }
 
