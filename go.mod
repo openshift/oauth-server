@@ -51,5 +51,5 @@ require (
 
 replace (
 	github.com/RangelReale/osin => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
-	github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20190724130521-fababb0555f2
+	github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 )
