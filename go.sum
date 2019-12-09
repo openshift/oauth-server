@@ -192,6 +192,8 @@ github.com/openshift/client-go v0.0.0-20190923092832-6afefc9bb372 h1:iOFI/ua5QKK
 github.com/openshift/client-go v0.0.0-20190923092832-6afefc9bb372/go.mod h1:6rzn+JTr7+WYS2E1TExP4gByoABxMznR6y2SnUIkmxk=
 github.com/openshift/library-go v0.0.0-20190923093227-76b67dd70a86 h1:IU+umCUKn37qcDOJEDkT1SL7za+YGCsuZMoni6FXu7I=
 github.com/openshift/library-go v0.0.0-20190923093227-76b67dd70a86/go.mod h1:NBttNjZpWwup/nthuLbPAPSYC8Qyo+BBK5bCtFoyYjo=
+github.com/openshift/library-go v0.0.0-20191209093827-acc37612b9f9 h1:bb07omT6Nz6mFE7NHpldsAlUcHZsgKYhgkDgT6pFGeI=
+github.com/openshift/library-go v0.0.0-20191209093827-acc37612b9f9/go.mod h1:NBttNjZpWwup/nthuLbPAPSYC8Qyo+BBK5bCtFoyYjo=
 github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769 h1:jTaxjdXcD89WEuNXU/R+ByAMhcI3ETa6Y/o4V9v0s9Q=
 github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769/go.mod h1:/gGuqQHvGNST0GB+Pomi3398FTdcM+9UaXafpqHvfDM=
 github.com/openshift/osincli v0.0.0-20190724130521-fababb0555f2 h1:BQijuR1b+/aK5oMNrYo8VcPzFqkrDyY/QI3uh43EKIY=
