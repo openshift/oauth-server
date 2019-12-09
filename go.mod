@@ -24,7 +24,7 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/openshift/api v3.9.1-0.20190923092516-169848dd8137+incompatible
 	github.com/openshift/client-go v0.0.0-20190923092832-6afefc9bb372
-	github.com/openshift/library-go v0.0.0-20190923093227-76b67dd70a86
+	github.com/openshift/library-go v0.0.0-20191209093827-acc37612b9f9
 	github.com/pkg/profile v1.3.0 // indirect
 	github.com/prometheus/client_golang v0.9.2
 	github.com/prometheus/common v0.2.0 // indirect
