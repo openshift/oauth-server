@@ -101,22 +101,26 @@ func NewOAuthServerConfig(oauthConfig osinv1.OAuthConfig, userClientConfig *rest
 		// we dynamically enable or disable its UI based on the backing secret
 		// this must be the first IDP to make sure that it can handle basic auth challenges first
 		// this mostly avoids weird cases with the allow all IDP
-		oauthConfig.IdentityProviders = append(
-			[]osinv1.IdentityProvider{
-				{
-					Name: bootstrap.BootstrapUser, // will never conflict with other IDPs due to the :
-					// don't set it up as challenger if RequestHeaders IdP already is set that way
-					// this would set challenging headers and break RequestHeaders IdP
-					UseAsChallenger: !isRequestHeaderSetAsChallenger(oauthConfig.IdentityProviders),
-					UseAsLogin:      true,
-					MappingMethod:   string(identitymapper.MappingMethodClaim), // irrelevant, but needs to be valid
-					Provider: runtime.RawExtension{
-						Object: &config.BootstrapIdentityProvider{},
+		if bootstrapUserEnabled, err := bootstrapUserDataGetter.IsEnabled(); err != nil {
+			return nil, err
+		} else if bootstrapUserEnabled {
+			oauthConfig.IdentityProviders = append(
+				[]osinv1.IdentityProvider{
+					{
+						Name: bootstrap.BootstrapUser, // will never conflict with other IDPs due to the :
+						// don't set it up as challenger if RequestHeaders IdP already is set that way
+						// this would set challenging headers and break RequestHeaders IdP
+						UseAsChallenger: !isRequestHeaderSetAsChallenger(oauthConfig.IdentityProviders),
+						UseAsLogin:      true,
+						MappingMethod:   string(identitymapper.MappingMethodClaim), // irrelevant, but needs to be valid
+						Provider: runtime.RawExtension{
+							Object: &config.BootstrapIdentityProvider{},
+						},
 					},
 				},
-			},
-			oauthConfig.IdentityProviders...,
-		)
+				oauthConfig.IdentityProviders...,
+			)
+		}
 	}
 
 	if len(oauthConfig.IdentityProviders) == 0 {
