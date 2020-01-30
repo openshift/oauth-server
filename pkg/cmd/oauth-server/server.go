@@ -1,6 +1,7 @@
 package oauth_server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -102,7 +103,7 @@ func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig) (*oauthserver.OAu
 			}
 
 			// if the path authorizer would allow anybody, we don't care about previous authentication result
-			if decision, _, _ := pathAuthorizer.Authorize(authAttributes); decision == authorizer.DecisionAllow {
+			if decision, _, _ := pathAuthorizer.Authorize(context.TODO(), authAttributes); decision == authorizer.DecisionAllow {
 				return anonymousAuthenticator.AuthenticateRequest(req)
 			}
 
