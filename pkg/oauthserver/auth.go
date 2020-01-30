@@ -12,7 +12,6 @@ import (
 
 	"github.com/RangelReale/osin"
 	"github.com/RangelReale/osincli"
-	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knet "k8s.io/apimachinery/pkg/util/net"
@@ -21,8 +20,10 @@ import (
 	"k8s.io/apiserver/pkg/authentication/request/union"
 	x509request "k8s.io/apiserver/pkg/authentication/request/x509"
 	kuser "k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/apiserver/pkg/server/dynamiccertificates"
 	ktransport "k8s.io/client-go/transport"
 	"k8s.io/client-go/util/cert"
+	"k8s.io/klog"
 
 	oauthapi "github.com/openshift/api/oauth/v1"
 	osinv1 "github.com/openshift/api/osin/v1"
@@ -646,9 +647,11 @@ func (c *OAuthServerConfig) getAuthenticationRequestHandler() (authenticator.Req
 
 					// we need to add our CA data to secure serving as well to have the OAuth server
 					// advertise them for client auth during TLS handshake
-					if ok := c.GenericConfig.SecureServing.ClientCA.AppendCertsFromPEM(caData); !ok {
+					caProvider, err := dynamiccertificates.NewStaticCAContent("identity-provider-ca", caData)
+					if err != nil {
 						return nil, fmt.Errorf("error adding certs from %s to secureServing: %v", provider.ClientCA, err)
 					}
+					c.GenericConfig.SecureServing.ClientCA = dynamiccertificates.NewUnionCAContentProvider(c.GenericConfig.SecureServing.ClientCA, caProvider)
 
 					authRequestHandler = x509request.NewVerifier(opts, authRequestHandler, sets.NewString(provider.ClientCommonNames...))
 				}
