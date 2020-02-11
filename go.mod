@@ -5,7 +5,6 @@ go 1.13
 require (
 	github.com/RangelReale/osin v0.0.0
 	github.com/RangelReale/osincli v0.0.0
-	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gophercloud/gophercloud v0.1.0
@@ -15,7 +14,7 @@ require (
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.10.0 // indirect
 	github.com/openshift/api v0.0.0-20200127192224-ffde1bfabb9f
-	github.com/openshift/build-machinery-go v0.0.0-20200211121458-5e3d6e570160 // indirect
+	github.com/openshift/build-machinery-go v0.0.0-20200211121458-5e3d6e570160
 	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
 	github.com/openshift/library-go v0.0.0-20200130090538-26ae77929944
 	github.com/prometheus/client_golang v1.1.0
