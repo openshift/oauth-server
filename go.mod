@@ -15,6 +15,7 @@ require (
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.10.0 // indirect
 	github.com/openshift/api v0.0.0-20200127192224-ffde1bfabb9f
+	github.com/openshift/build-machinery-go v0.0.0-20200211121458-5e3d6e570160 // indirect
 	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
 	github.com/openshift/library-go v0.0.0-20200130090538-26ae77929944
 	github.com/prometheus/client_golang v1.1.0
