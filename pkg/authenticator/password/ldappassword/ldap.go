@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime/debug"
+	"time"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -42,6 +43,12 @@ type Authenticator struct {
 
 // New returns an authenticator which will validate usernames/passwords using LDAP.
 func New(providerName string, options Options, mapper authapi.UserIdentityMapper) (authenticator.Password, error) {
+	// BZ 1806620: Sometimes connecting to LDAP server might take long due to
+	// network issues causing the request to OAuth server to timeout(60s)
+	// before trying other IDPs even if the user can be authenticated using an
+	// IDP other than LDAP. Changing the global LDAP connection timeout here to
+	// 30s to fix this scenario and make it consistent with other OAuth IDPs
+	ldap.DefaultTimeout = 30 * time.Second
 	auth := &Authenticator{
 		providerName: providerName,
 		options:      options,
