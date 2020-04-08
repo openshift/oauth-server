@@ -1,7 +1,8 @@
 package metrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/component-base/metrics"
+	"k8s.io/component-base/metrics/legacyregistry"
 )
 
 const (
@@ -15,36 +16,36 @@ const (
 )
 
 var (
-	authPasswordTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	authPasswordTotal = metrics.NewCounterVec(
+		&metrics.CounterOpts{
 			Subsystem: authSubsystem,
 			Name:      "password_total",
 			Help:      "Counts total password authentication attempts",
 		}, []string{},
 	)
-	authFormCounter = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	authFormCounter = metrics.NewCounterVec(
+		&metrics.CounterOpts{
 			Subsystem: authSubsystem,
 			Name:      "form_password_count",
 			Help:      "Counts form password authentication attempts",
 		}, []string{},
 	)
-	authFormCounterResult = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	authFormCounterResult = metrics.NewCounterVec(
+		&metrics.CounterOpts{
 			Subsystem: authSubsystem,
 			Name:      "form_password_count_result",
 			Help:      "Counts form password authentication attempts by result",
 		}, []string{"result"},
 	)
-	authBasicCounter = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	authBasicCounter = metrics.NewCounterVec(
+		&metrics.CounterOpts{
 			Subsystem: authSubsystem,
 			Name:      "basic_password_count",
 			Help:      "Counts basic password authentication attempts",
 		}, []string{},
 	)
-	authBasicCounterResult = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	authBasicCounterResult = metrics.NewCounterVec(
+		&metrics.CounterOpts{
 			Subsystem: authSubsystem,
 			Name:      "basic_password_count_result",
 			Help:      "Counts basic password authentication attempts by result",
@@ -53,11 +54,11 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(authPasswordTotal)
-	prometheus.MustRegister(authFormCounter)
-	prometheus.MustRegister(authFormCounterResult)
-	prometheus.MustRegister(authBasicCounter)
-	prometheus.MustRegister(authBasicCounterResult)
+	legacyregistry.MustRegister(authPasswordTotal)
+	legacyregistry.MustRegister(authFormCounter)
+	legacyregistry.MustRegister(authFormCounterResult)
+	legacyregistry.MustRegister(authBasicCounter)
+	legacyregistry.MustRegister(authBasicCounterResult)
 }
 
 func RecordBasicPasswordAuth(result string) {
