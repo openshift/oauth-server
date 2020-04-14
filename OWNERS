@@ -6,3 +6,4 @@ approvers:
   - smarterclayton
   - stlaz
   - sttts
+component: apiserver-auth
