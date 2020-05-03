@@ -1,6 +1,7 @@
 package grant
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -17,7 +18,7 @@ import (
 	oapi "github.com/openshift/api/oauth/v1"
 	oauthclient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	scopemetadata "github.com/openshift/library-go/pkg/authorization/scopemetadata"
-	"github.com/openshift/oauth-server/pkg"
+	oauthserver "github.com/openshift/oauth-server/pkg"
 	"github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/scopecovers"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
@@ -124,7 +125,7 @@ func (l *Grant) handleForm(user user.Info, w http.ResponseWriter, req *http.Requ
 	scopes := scopecovers.Split(q.Get(scopeParam))
 	redirectURI := q.Get(redirectURIParam)
 
-	client, err := l.clientregistry.Get(clientID, metav1.GetOptions{})
+	client, err := l.clientregistry.Get(context.TODO(), clientID, metav1.GetOptions{})
 	if err != nil || client == nil {
 		l.failed("Could not find client for client_id", w, req)
 		return
@@ -141,7 +142,7 @@ func (l *Grant) handleForm(user user.Info, w http.ResponseWriter, req *http.Requ
 	requestedScopes := []Scope{}
 
 	clientAuthID := user.GetName() + ":" + client.Name
-	if clientAuth, err := l.authregistry.Get(clientAuthID, metav1.GetOptions{}); err == nil {
+	if clientAuth, err := l.authregistry.Get(context.TODO(), clientAuthID, metav1.GetOptions{}); err == nil {
 		grantedScopeNames = clientAuth.Scopes
 	}
 
@@ -221,7 +222,7 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 	}
 
 	clientID := req.PostFormValue(clientIDParam)
-	client, err := l.clientregistry.Get(clientID, metav1.GetOptions{})
+	client, err := l.clientregistry.Get(context.TODO(), clientID, metav1.GetOptions{})
 	if err != nil || client == nil {
 		l.failed("Could not find client for client_id", w, req)
 		return
@@ -234,11 +235,11 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 
 	clientAuthID := user.GetName() + ":" + client.Name
 
-	clientAuth, err := l.authregistry.Get(clientAuthID, metav1.GetOptions{})
+	clientAuth, err := l.authregistry.Get(context.TODO(), clientAuthID, metav1.GetOptions{})
 	if err == nil && clientAuth != nil {
 		// Add new scopes and update
 		clientAuth.Scopes = scopecovers.Add(clientAuth.Scopes, scopecovers.Split(scopes))
-		if _, err = l.authregistry.Update(clientAuth); err != nil {
+		if _, err = l.authregistry.Update(context.TODO(), clientAuth, metav1.UpdateOptions{}); err != nil {
 			klog.Errorf("Unable to update authorization: %v", err)
 			l.failed("Could not update client authorization", w, req)
 			return
@@ -253,7 +254,7 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 		}
 		clientAuth.Name = clientAuthID
 
-		if _, err = l.authregistry.Create(clientAuth); err != nil {
+		if _, err = l.authregistry.Create(context.TODO(), clientAuth, metav1.CreateOptions{}); err != nil {
 			klog.Errorf("Unable to create authorization: %v", err)
 			l.failed("Could not create client authorization", w, req)
 			return

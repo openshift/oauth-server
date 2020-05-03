@@ -1,6 +1,7 @@
 package oauthserver
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -161,7 +162,7 @@ func (c *OAuthServerConfig) WithOAuth(handler http.Handler) (http.Handler, error
 }
 
 func (c *OAuthServerConfig) getOsinOAuthClient() (*osincli.Client, error) {
-	browserClient, err := c.ExtraOAuthConfig.OAuthClientClient.Get(openShiftBrowserClientID, metav1.GetOptions{})
+	browserClient, err := c.ExtraOAuthConfig.OAuthClientClient.Get(context.TODO(), openShiftBrowserClientID, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

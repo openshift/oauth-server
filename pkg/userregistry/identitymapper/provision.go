@@ -51,7 +51,7 @@ func (p *provisioningIdentityMapper) UserFor(info authapi.UserIdentityInfo) (kus
 func (p *provisioningIdentityMapper) userForWithRetries(info authapi.UserIdentityInfo, allowedRetries int) (kuser.Info, error) {
 	ctx := apirequest.NewContext()
 
-	identity, err := p.identity.Get(info.GetIdentityName(), metav1.GetOptions{})
+	identity, err := p.identity.Get(context.TODO(), info.GetIdentityName(), metav1.GetOptions{})
 
 	if kerrs.IsNotFound(err) {
 		user, err := p.createIdentityAndMapping(ctx, info)
@@ -98,7 +98,7 @@ func (p *provisioningIdentityMapper) createIdentityAndMapping(ctx context.Contex
 		Name: persistedUser.Name,
 		UID:  persistedUser.UID,
 	}
-	if _, err := p.identity.Create(identity); err != nil {
+	if _, err := p.identity.Create(context.TODO(), identity, metav1.CreateOptions{}); err != nil {
 		return nil, err
 	}
 
@@ -109,7 +109,7 @@ func (p *provisioningIdentityMapper) getMapping(ctx context.Context, identity *u
 	if len(identity.User.Name) == 0 {
 		return nil, kerrs.NewNotFound(userapi.Resource("useridentitymapping"), identity.Name)
 	}
-	u, err := p.user.Get(identity.User.Name, metav1.GetOptions{})
+	u, err := p.user.Get(context.TODO(), identity.User.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

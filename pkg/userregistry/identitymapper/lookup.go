@@ -1,6 +1,7 @@
 package identitymapper
 
 import (
+	"context"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,12 +21,12 @@ type lookupIdentityMapper struct {
 
 // UserFor returns info about the user for whom identity info has been provided
 func (p *lookupIdentityMapper) UserFor(info authapi.UserIdentityInfo) (kuser.Info, error) {
-	mapping, err := p.mappings.Get(info.GetIdentityName(), metav1.GetOptions{})
+	mapping, err := p.mappings.Get(context.TODO(), info.GetIdentityName(), metav1.GetOptions{})
 	if err != nil {
 		return nil, NewLookupError(info, err)
 	}
 
-	u, err := p.users.Get(mapping.User.Name, metav1.GetOptions{})
+	u, err := p.users.Get(context.TODO(), mapping.User.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, NewLookupError(info, err)
 	}

@@ -1,6 +1,7 @@
 package registrystorage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -103,7 +104,7 @@ func (s *storage) Close() {
 
 // GetClient loads the client by id (client_id)
 func (s *storage) GetClient(id string) (osin.Client, error) {
-	c, err := s.client.Get(id, metav1.GetOptions{})
+	c, err := s.client.Get(context.TODO(), id, metav1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			return nil, nil
@@ -119,7 +120,7 @@ func (s *storage) SaveAuthorize(data *osin.AuthorizeData) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.authorizetoken.Create(token)
+	_, err = s.authorizetoken.Create(context.TODO(), token, metav1.CreateOptions{})
 	return err
 }
 
@@ -127,7 +128,7 @@ func (s *storage) SaveAuthorize(data *osin.AuthorizeData) error {
 // Client information MUST be loaded together.
 // Optionally can return error if expired.
 func (s *storage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
-	authorize, err := s.authorizetoken.Get(code, metav1.GetOptions{})
+	authorize, err := s.authorizetoken.Get(context.TODO(), code, metav1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		klog.V(5).Info("Authorization code not found")
 		return nil, nil
@@ -141,7 +142,7 @@ func (s *storage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 // RemoveAuthorize revokes or deletes the authorization code.
 func (s *storage) RemoveAuthorize(code string) error {
 	// TODO: return no error if registry returns IsNotFound
-	return s.authorizetoken.Delete(code, nil)
+	return s.authorizetoken.Delete(context.TODO(), code, metav1.DeleteOptions{})
 }
 
 // SaveAccess writes AccessData.
@@ -151,7 +152,7 @@ func (s *storage) SaveAccess(data *osin.AccessData) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.accesstoken.Create(token)
+	_, err = s.accesstoken.Create(context.TODO(), token, metav1.CreateOptions{})
 	return err
 }
 
@@ -159,7 +160,7 @@ func (s *storage) SaveAccess(data *osin.AccessData) error {
 // AuthorizeData and AccessData DON'T NEED to be loaded if not easily available.
 // Optionally can return error if expired.
 func (s *storage) LoadAccess(token string) (*osin.AccessData, error) {
-	access, err := s.accesstoken.Get(token, metav1.GetOptions{})
+	access, err := s.accesstoken.Get(context.TODO(), token, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +170,7 @@ func (s *storage) LoadAccess(token string) (*osin.AccessData, error) {
 // RemoveAccess revokes or deletes an AccessData.
 func (s *storage) RemoveAccess(token string) error {
 	// TODO: return no error if registry returns IsNotFound
-	return s.accesstoken.Delete(token, nil)
+	return s.accesstoken.Delete(context.TODO(), token, metav1.DeleteOptions{})
 }
 
 // LoadRefresh retrieves refresh AccessData. Client information MUST be loaded together.
@@ -211,7 +212,7 @@ func (s *storage) convertFromAuthorizeToken(authorize *oauthapi.OAuthAuthorizeTo
 	if err != nil {
 		return nil, err
 	}
-	client, err := s.client.Get(authorize.ClientName, metav1.GetOptions{})
+	client, err := s.client.Get(context.TODO(), authorize.ClientName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +271,7 @@ func (s *storage) convertFromAccessToken(access *oauthapi.OAuthAccessToken) (*os
 	if err != nil {
 		return nil, err
 	}
-	client, err := s.client.Get(access.ClientName, metav1.GetOptions{})
+	client, err := s.client.Get(context.TODO(), access.ClientName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
