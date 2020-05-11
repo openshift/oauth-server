@@ -1,6 +1,7 @@
 package tokenrequest
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"io"
@@ -17,7 +18,7 @@ import (
 	"github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	bootstrap "github.com/openshift/library-go/pkg/authentication/bootstrapauthenticator"
 	"github.com/openshift/library-go/pkg/oauth/oauthdiscovery"
-	"github.com/openshift/oauth-server/pkg"
+	oauthserver "github.com/openshift/oauth-server/pkg"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
 )
 
@@ -127,7 +128,7 @@ func (t *tokenRequest) displayTokenPost(osinOAuthClient *osincli.Client, w http.
 		return
 	}
 
-	token, err := t.tokens.Get(accessData.AccessToken, metav1.GetOptions{})
+	token, err := t.tokens.Get(context.TODO(), accessData.AccessToken, metav1.GetOptions{})
 	if err != nil {
 		data.Error = "Error checking token" // do not leak error to user, do not log error
 		w.WriteHeader(http.StatusInternalServerError)

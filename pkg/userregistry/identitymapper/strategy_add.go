@@ -25,7 +25,7 @@ func NewStrategyAdd(user userclient.UserInterface, initializer Initializer) User
 
 func (s *StrategyAdd) UserForNewIdentity(ctx context.Context, preferredUserName string, identity *userapi.Identity) (*userapi.User, error) {
 
-	persistedUser, err := s.user.Get(preferredUserName, metav1.GetOptions{})
+	persistedUser, err := s.user.Get(context.TODO(), preferredUserName, metav1.GetOptions{})
 
 	switch {
 	case kerrs.IsNotFound(err):
@@ -34,7 +34,7 @@ func (s *StrategyAdd) UserForNewIdentity(ctx context.Context, preferredUserName 
 		desiredUser.Name = preferredUserName
 		desiredUser.Identities = []string{identity.Name}
 		s.initializer.InitializeUser(identity, desiredUser)
-		return s.user.Create(desiredUser)
+		return s.user.Create(context.TODO(), desiredUser, metav1.CreateOptions{})
 
 	case err == nil:
 		// If the existing user already references our identity, we're done
@@ -48,7 +48,7 @@ func (s *StrategyAdd) UserForNewIdentity(ctx context.Context, preferredUserName 
 		if len(persistedUser.Identities) == 1 {
 			s.initializer.InitializeUser(identity, persistedUser)
 		}
-		return s.user.Update(persistedUser)
+		return s.user.Update(context.TODO(), persistedUser, metav1.UpdateOptions{})
 
 	default:
 		// Fail on errors other than "not found"

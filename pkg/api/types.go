@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
 
@@ -95,5 +97,5 @@ type ProviderInfo struct {
 // OAuthClientGetter exposes a way to get a specific client.  This is useful for other registries to get scope limitations
 // on particular clients.   This interface will make its easier to write a future cache on it
 type OAuthClientGetter interface {
-	Get(name string, options metav1.GetOptions) (*oauthapi.OAuthClient, error)
+	Get(ctx context.Context, name string, options metav1.GetOptions) (*oauthapi.OAuthClient, error)
 }

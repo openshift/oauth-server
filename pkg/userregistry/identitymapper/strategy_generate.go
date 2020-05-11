@@ -55,7 +55,7 @@ UserSearch:
 		potentialUserName := s.generator(preferredUserName, sequence)
 
 		// See if it already exists
-		persistedUser, err := s.user.Get(potentialUserName, metav1.GetOptions{})
+		persistedUser, err := s.user.Get(context.TODO(), potentialUserName, metav1.GetOptions{})
 
 		switch {
 		case kerrs.IsNotFound(err):
@@ -64,7 +64,7 @@ UserSearch:
 			desiredUser.Name = potentialUserName
 			desiredUser.Identities = []string{identity.Name}
 			s.initializer.InitializeUser(identity, desiredUser)
-			return s.user.Create(desiredUser)
+			return s.user.Create(context.TODO(), desiredUser, metav1.CreateOptions{})
 
 		case err == nil:
 			// If the existing user already references our identity, we're done

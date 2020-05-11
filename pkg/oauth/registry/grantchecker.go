@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	stderrors "errors"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -58,7 +59,7 @@ func (c *ClientAuthorizationGrantChecker) HasAuthorizedClient(user kuser.Info, g
 // getClientAuthorization gets the OAuthClientAuthorization with the given name and validates that it matches the given user
 // it attempts to delete stale client authorizations, and thus must be retried in case of conflicts
 func (c *ClientAuthorizationGrantChecker) getClientAuthorization(name string, user kuser.Info) (*oauth.OAuthClientAuthorization, error) {
-	authorization, err := c.client.Get(name, metav1.GetOptions{})
+	authorization, err := c.client.Get(context.TODO(), name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		// if no such authorization exists, it simply means the user needs to go through the grant flow
 		return nil, nil
@@ -72,7 +73,7 @@ func (c *ClientAuthorizationGrantChecker) getClientAuthorization(name string, us
 	// user.GetUID() and authorization.UserUID are both guaranteed to be non-empty
 	if user.GetUID() != authorization.UserUID {
 		klog.Infof("%#v does not match stored client authorization %#v, attempting to delete stale authorization", user, authorization)
-		if err := c.client.Delete(name, metav1.NewPreconditionDeleteOptions(string(authorization.UID))); err != nil && !errors.IsNotFound(err) {
+		if err := c.client.Delete(context.TODO(), name, *metav1.NewPreconditionDeleteOptions(string(authorization.UID))); err != nil && !errors.IsNotFound(err) {
 			// ignore not found since that could be caused by multiple grant flows occurring at once (the other flow deleted the authorization before we did)
 			// this could be a conflict error, which will cause this whole function to be retried
 			return nil, err
