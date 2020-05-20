@@ -19,6 +19,7 @@ import (
 	"github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
 	"github.com/openshift/oauth-server/pkg/scopecovers"
+	"github.com/openshift/oauth-server/pkg/server/crypto"
 )
 
 type storage struct {
@@ -58,12 +59,12 @@ func (w *clientWrapper) GetSecret() string {
 }
 
 func (w *clientWrapper) ClientSecretMatches(secret string) bool {
-	if w.client.Secret == secret {
+	if crypto.IsEqualConstantTime(w.client.Secret, secret) {
 		return true
 	}
 
 	for _, additionalSecret := range w.client.AdditionalSecrets {
-		if additionalSecret == secret {
+		if crypto.IsEqualConstantTime(additionalSecret, secret) {
 			return true
 		}
 	}
