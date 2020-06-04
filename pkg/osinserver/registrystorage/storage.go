@@ -246,9 +246,9 @@ func (s *storage) convertToAccessToken(data *osin.AccessData) (*oauthapi.OAuthAc
 		Scopes:       scopecovers.Split(data.Scope),
 		RedirectURI:  data.RedirectUri,
 	}
-	if data.AuthorizeData != nil {
-		token.AuthorizeToken = data.AuthorizeData.Code
-	}
+	//if data.AuthorizeData != nil {
+	//	token.AuthorizeToken = data.AuthorizeData.Code
+	//}
 	var err error
 	if token.UserName, token.UserUID, err = convertFromUser(data.UserData); err != nil {
 		return nil, err
