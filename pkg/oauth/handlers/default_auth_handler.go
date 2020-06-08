@@ -115,11 +115,7 @@ func (authHandler *unionAuthenticationHandler) AuthenticationNeeded(apiClient au
 				w.WriteHeader(http.StatusFound)
 			default:
 				w.WriteHeader(http.StatusUnauthorized)
-				ctx := req.Context()
-				if !ok {
-					return false, fmt.Errorf("no context found for request to audit")
-				}
-				ev := request.AuditEventFrom(ctx)
+				ev := request.AuditEventFrom(req.Context())
 				if ev != nil {
 					// this code mimics the bits from k8s.io/apiserver/pkg/endpoints/filters/authn_audit.go
 					// but since we don't accept failedHander here we need to manually alter the audit
