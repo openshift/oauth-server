@@ -16,6 +16,7 @@ import (
 	oauthapi "github.com/openshift/api/oauth/v1"
 	oauthclient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	scopemetadata "github.com/openshift/library-go/pkg/authorization/scopemetadata"
+
 	"github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
 	"github.com/openshift/oauth-server/pkg/scopecovers"
@@ -129,7 +130,7 @@ func (s *storage) SaveAuthorize(data *osin.AuthorizeData) error {
 // Client information MUST be loaded together.
 // Optionally can return error if expired.
 func (s *storage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
-	authorize, err := s.authorizetoken.Get(context.TODO(), code, metav1.GetOptions{})
+	authorize, err := s.authorizetoken.Get(context.TODO(), TokenToObjectName(code), metav1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		klog.V(5).Info("Authorization code not found")
 		return nil, nil
@@ -137,13 +138,13 @@ func (s *storage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.convertFromAuthorizeToken(authorize)
+	return s.convertFromAuthorizeToken(code, authorize)
 }
 
 // RemoveAuthorize revokes or deletes the authorization code.
 func (s *storage) RemoveAuthorize(code string) error {
 	// TODO: return no error if registry returns IsNotFound
-	return s.authorizetoken.Delete(context.TODO(), code, metav1.DeleteOptions{})
+	return s.authorizetoken.Delete(context.TODO(), TokenToObjectName(code), metav1.DeleteOptions{})
 }
 
 // SaveAccess writes AccessData.
@@ -160,36 +161,36 @@ func (s *storage) SaveAccess(data *osin.AccessData) error {
 // LoadAccess retrieves access data by token. Client information MUST be loaded together.
 // AuthorizeData and AccessData DON'T NEED to be loaded if not easily available.
 // Optionally can return error if expired.
-func (s *storage) LoadAccess(token string) (*osin.AccessData, error) {
-	access, err := s.accesstoken.Get(context.TODO(), token, metav1.GetOptions{})
+func (s *storage) LoadAccess(code string) (*osin.AccessData, error) {
+	access, err := s.accesstoken.Get(context.TODO(), TokenToObjectName(code), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	return s.convertFromAccessToken(access)
+	return s.convertFromAccessToken(code, access)
 }
 
 // RemoveAccess revokes or deletes an AccessData.
-func (s *storage) RemoveAccess(token string) error {
+func (s *storage) RemoveAccess(code string) error {
 	// TODO: return no error if registry returns IsNotFound
-	return s.accesstoken.Delete(context.TODO(), token, metav1.DeleteOptions{})
+	return s.accesstoken.Delete(context.TODO(), TokenToObjectName(code), metav1.DeleteOptions{})
 }
 
 // LoadRefresh retrieves refresh AccessData. Client information MUST be loaded together.
 // AuthorizeData and AccessData DON'T NEED to be loaded if not easily available.
 // Optionally can return error if expired.
-func (s *storage) LoadRefresh(token string) (*osin.AccessData, error) {
+func (s *storage) LoadRefresh(code string) (*osin.AccessData, error) {
 	return nil, errors.New("not implemented")
 }
 
 // RemoveRefresh revokes or deletes refresh AccessData.
-func (s *storage) RemoveRefresh(token string) error {
+func (s *storage) RemoveRefresh(code string) error {
 	return errors.New("not implemented")
 }
 
 func (s *storage) convertToAuthorizeToken(data *osin.AuthorizeData) (*oauthapi.OAuthAuthorizeToken, error) {
 	token := &oauthapi.OAuthAuthorizeToken{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: data.Code,
+			Name: TokenToObjectName(data.Code),
 			// creation time is controlled by the API
 			// CreationTimestamp: metav1.Time{Time: data.CreatedAt},
 		},
@@ -208,7 +209,7 @@ func (s *storage) convertToAuthorizeToken(data *osin.AuthorizeData) (*oauthapi.O
 	return token, nil
 }
 
-func (s *storage) convertFromAuthorizeToken(authorize *oauthapi.OAuthAuthorizeToken) (*osin.AuthorizeData, error) {
+func (s *storage) convertFromAuthorizeToken(code string, authorize *oauthapi.OAuthAuthorizeToken) (*osin.AuthorizeData, error) {
 	user, err := convertFromToken(authorize.UserName, authorize.UserUID)
 	if err != nil {
 		return nil, err
@@ -222,7 +223,7 @@ func (s *storage) convertFromAuthorizeToken(authorize *oauthapi.OAuthAuthorizeTo
 	}
 
 	return &osin.AuthorizeData{
-		Code:                authorize.Name,
+		Code:                code,
 		CodeChallenge:       authorize.CodeChallenge,
 		CodeChallengeMethod: authorize.CodeChallengeMethod,
 		Client:              &clientWrapper{authorize.ClientName, client},
@@ -238,7 +239,7 @@ func (s *storage) convertFromAuthorizeToken(authorize *oauthapi.OAuthAuthorizeTo
 func (s *storage) convertToAccessToken(data *osin.AccessData) (*oauthapi.OAuthAccessToken, error) {
 	token := &oauthapi.OAuthAccessToken{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: data.AccessToken,
+			Name: TokenToObjectName(data.AccessToken),
 			// creation time is controlled by the API
 			// CreationTimestamp: metav1.Time{Time: data.CreatedAt},
 		},
@@ -267,7 +268,7 @@ func (s *storage) convertToAccessToken(data *osin.AccessData) (*oauthapi.OAuthAc
 	return token, nil
 }
 
-func (s *storage) convertFromAccessToken(access *oauthapi.OAuthAccessToken) (*osin.AccessData, error) {
+func (s *storage) convertFromAccessToken(code string, access *oauthapi.OAuthAccessToken) (*osin.AccessData, error) {
 	user, err := convertFromToken(access.UserName, access.UserUID)
 	if err != nil {
 		return nil, err
@@ -281,7 +282,7 @@ func (s *storage) convertFromAccessToken(access *oauthapi.OAuthAccessToken) (*os
 	}
 
 	return &osin.AccessData{
-		AccessToken:  access.Name,
+		AccessToken:  code,
 		RefreshToken: access.RefreshToken,
 		Client:       &clientWrapper{access.ClientName, client},
 		ExpiresIn:    int32(access.ExpiresIn),
@@ -316,4 +317,14 @@ func convertFromToken(name, uid string) (kuser.Info, error) {
 		Name: name,
 		UID:  uid,
 	}, nil
+}
+
+// TokenToObjectName returns the oauthaccesstokens object name for the given raw token,
+// i.e. the sha256 hash prefixed with "sha256~".
+func TokenToObjectName(code string) string {
+	name, prefixed := crypto.TrimSHA256Prefix(code)
+	if prefixed {
+		return crypto.SHA256Token(name)
+	}
+	return name
 }

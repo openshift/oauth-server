@@ -30,7 +30,7 @@ func randomToken() string {
 type TokenGen struct{}
 
 func (TokenGen) GenerateAuthorizeToken(data *osin.AuthorizeData) (ret string, err error) {
-	return randomToken(), nil
+	return crypto.SHA256Prefix + randomToken(), nil
 }
 
 func (TokenGen) GenerateAccessToken(data *osin.AccessData, generaterefresh bool) (string, string, error) {
@@ -41,5 +41,5 @@ func (TokenGen) GenerateAccessToken(data *osin.AccessData, generaterefresh bool)
 		refreshtoken = randomToken()
 	}
 
-	return accesstoken, refreshtoken, nil
+	return crypto.SHA256Prefix + accesstoken, refreshtoken, nil
 }
