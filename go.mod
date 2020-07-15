@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/sessions v0.0.0-20171008214740-a3acf13e802c
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.10.0 // indirect
-	github.com/openshift/api v0.0.0-20200429152225-b98a784d8e6d
+	github.com/openshift/api v0.0.0-20200713132323-784a0bec9dfd
 	github.com/openshift/build-machinery-go v0.0.0-20200424080330-082bf86082cc
 	github.com/openshift/client-go v0.0.0-20200422192633-6f6c07fc2a70
 	github.com/openshift/library-go v0.0.0-20200429122220-9e6c27e916a0
@@ -24,8 +24,8 @@ require (
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gopkg.in/ldap.v2 v2.5.1
-	k8s.io/api v0.18.2
-	k8s.io/apimachinery v0.18.2
+	k8s.io/api v0.18.3
+	k8s.io/apimachinery v0.18.3
 	k8s.io/apiserver v0.18.2
 	k8s.io/client-go v0.18.2
 	k8s.io/component-base v0.18.2
