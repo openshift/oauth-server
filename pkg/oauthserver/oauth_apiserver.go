@@ -107,10 +107,8 @@ func NewOAuthServerConfig(oauthConfig osinv1.OAuthConfig, userClientConfig *rest
 			oauthConfig.IdentityProviders = append(
 				[]osinv1.IdentityProvider{
 					{
-						Name: bootstrap.BootstrapUser, // will never conflict with other IDPs due to the :
-						// don't set it up as challenger if RequestHeaders IdP already is set that way
-						// this would set challenging headers and break RequestHeaders IdP
-						UseAsChallenger: !isRequestHeaderSetAsChallenger(oauthConfig.IdentityProviders),
+						Name:            bootstrap.BootstrapUser, // will never conflict with other IDPs due to the :
+						UseAsChallenger: useKubeAdminAsChallenger(oauthConfig.IdentityProviders),
 						UseAsLogin:      true,
 						MappingMethod:   string(identitymapper.MappingMethodClaim), // irrelevant, but needs to be valid
 						Provider: runtime.RawExtension{
@@ -217,13 +215,19 @@ func isHTTPS(u string) bool {
 	return err == nil && parsedURL.Scheme == "https"
 }
 
-func isRequestHeaderSetAsChallenger(providers []osinv1.IdentityProvider) bool {
+func useKubeAdminAsChallenger(providers []osinv1.IdentityProvider) bool {
+	var challengerFound bool
 	for _, p := range providers {
+		if p.UseAsChallenger {
+			challengerFound = true
+		}
 		if _, isRequestHeader := p.Provider.Object.(*osinv1.RequestHeaderIdentityProvider); isRequestHeader && p.UseAsChallenger {
-			return true
+			// don't set up kubeadmin as challenger if RequestHeaders IdP already is set that way
+			// this would set challenging headers and break RequestHeaders IdP
+			return false
 		}
 	}
-	return false
+	return len(providers) == 0 || challengerFound
 }
 
 type ExtraOAuthConfig struct {
