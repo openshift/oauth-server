@@ -37,3 +37,12 @@ func IsPasswordAuthenticator(provider osinv1.IdentityProvider) bool {
 
 	return false
 }
+
+func IsBootstrap(provider osinv1.IdentityProvider) bool {
+	switch provider.Provider.Object.(type) {
+	case *BootstrapIdentityProvider:
+		return true
+	}
+
+	return false
+}

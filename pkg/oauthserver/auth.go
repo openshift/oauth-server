@@ -355,8 +355,13 @@ func (c *OAuthServerConfig) getAuthenticationHandler(mux oauthserver.Mux, errorH
 				login.Install(mux, loginPath)
 			}
 			if identityProvider.UseAsChallenger {
+				realm, challengerName := "openshift", "basic-challenge"
 				// For now, all password challenges share a single basic challenger, since they'll all respond to any basic credentials
-				challengers["basic-challenge"] = passwordchallenger.NewBasicAuthChallenger("openshift")
+				// The separate bootstrap user realm and challengerName allows 'oc' to distinguish between bootstrap IDP and others
+				if config.IsBootstrap(identityProvider) {
+					realm, challengerName = "openshift:kubeadmin", "kubeadmin-challenge"
+				}
+				challengers[challengerName] = passwordchallenger.NewBasicAuthChallenger(realm)
 			}
 		} else if config.IsOAuthIdentityProvider(identityProvider) {
 			oauthProvider, err := c.getOAuthProvider(identityProvider)
