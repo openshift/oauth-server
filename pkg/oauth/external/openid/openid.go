@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/RangelReale/osincli"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 

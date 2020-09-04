@@ -11,7 +11,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 
 	"gopkg.in/ldap.v2"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/library-go/pkg/security/ldapclient"
 	"github.com/openshift/library-go/pkg/security/ldaputil"

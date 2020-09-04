@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"github.com/RangelReale/osincli"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"

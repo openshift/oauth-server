@@ -9,7 +9,7 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	tokens3 "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/authentication/authenticator"

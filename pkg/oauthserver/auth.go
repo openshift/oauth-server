@@ -24,7 +24,7 @@ import (
 	"k8s.io/apiserver/pkg/server/dynamiccertificates"
 	ktransport "k8s.io/client-go/transport"
 	"k8s.io/client-go/util/cert"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	oauthapi "github.com/openshift/api/oauth/v1"
 	osinv1 "github.com/openshift/api/osin/v1"

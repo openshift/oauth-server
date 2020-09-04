@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"k8s.io/apiserver/pkg/authentication/authenticator"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	metrics "github.com/openshift/oauth-server/pkg/prometheus"

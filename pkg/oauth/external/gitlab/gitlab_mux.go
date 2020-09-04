@@ -7,7 +7,7 @@ import (
 
 	"github.com/openshift/oauth-server/pkg/oauth/external"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // The hosted version of GitLab is guaranteed to be using the latest stable version

@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type store struct {

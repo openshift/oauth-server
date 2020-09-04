@@ -13,7 +13,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	v1 "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	bootstrap "github.com/openshift/library-go/pkg/authentication/bootstrapauthenticator"
