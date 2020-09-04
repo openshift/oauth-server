@@ -36,6 +36,7 @@ import (
 	"github.com/openshift/library-go/pkg/security/ldaputil"
 	oauthserver "github.com/openshift/oauth-server/pkg"
 	"github.com/openshift/oauth-server/pkg/api"
+	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/authenticator/challenger/passwordchallenger"
 	"github.com/openshift/oauth-server/pkg/authenticator/challenger/placeholderchallenger"
 	"github.com/openshift/oauth-server/pkg/authenticator/password/allowanypassword"
@@ -350,7 +351,7 @@ func (c *OAuthServerConfig) getAuthenticationHandler(mux oauthserver.Mux, errorH
 					return nil, err
 				}
 
-				login := login.NewLogin(identityProvider.Name, c.getCSRF(), &callbackPasswordAuthenticator{Password: passwordAuth, AuthenticationSuccessHandler: passwordSuccessHandler}, loginFormRenderer)
+				login := login.NewLogin(identityProvider.Name, c.getCSRF(), &callbackPasswordAuthenticator{PasswordAuthenticator: passwordAuth, AuthenticationSuccessHandler: passwordSuccessHandler}, loginFormRenderer)
 				login.Install(mux, loginPath)
 			}
 			if identityProvider.UseAsChallenger {
@@ -507,7 +508,7 @@ func (c *OAuthServerConfig) getOAuthProvider(identityProvider osinv1.IdentityPro
 
 }
 
-func (c *OAuthServerConfig) getPasswordAuthenticator(identityProvider osinv1.IdentityProvider) (authenticator.Password, error) {
+func (c *OAuthServerConfig) getPasswordAuthenticator(identityProvider osinv1.IdentityProvider) (openshiftauthenticator.PasswordAuthenticator, error) {
 	identityMapper, err := identitymapper.NewIdentityUserMapper(c.ExtraOAuthConfig.IdentityClient, c.ExtraOAuthConfig.UserClient, c.ExtraOAuthConfig.UserIdentityMappingClient, identitymapper.MappingMethodType(identityProvider.MappingMethod))
 	if err != nil {
 		return nil, err
@@ -669,7 +670,7 @@ func (c *OAuthServerConfig) getAuthenticationRequestHandler() (authenticator.Req
 // callbackPasswordAuthenticator combines password auth, successful login callback,
 // and "then" param redirection
 type callbackPasswordAuthenticator struct {
-	authenticator.Password
+	openshiftauthenticator.PasswordAuthenticator
 	handlers.AuthenticationSuccessHandler
 }
 

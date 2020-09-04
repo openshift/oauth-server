@@ -70,7 +70,7 @@ func (h *authorizeAuthenticator) HandleAuthorize(ar *osin.AuthorizeRequest, resp
 
 // accessAuthenticator implements osinserver.AccessHandler to ensure non-token requests are authenticated
 type accessAuthenticator struct {
-	password  authenticator.Password
+	password  openshiftauthenticator.PasswordAuthenticator
 	assertion openshiftauthenticator.Assertion
 	client    openshiftauthenticator.Client
 }

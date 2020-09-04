@@ -15,6 +15,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 
 	authapi "github.com/openshift/oauth-server/pkg/api"
+	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/authenticator/identitymapper"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
@@ -84,7 +85,7 @@ func (h *Handler) AuthenticationRedirect(w http.ResponseWriter, req *http.Reques
 	return nil
 }
 
-func NewOAuthPasswordAuthenticator(provider Provider, mapper authapi.UserIdentityMapper) (authenticator.Password, error) {
+func NewOAuthPasswordAuthenticator(provider Provider, mapper authapi.UserIdentityMapper) (openshiftauthenticator.PasswordAuthenticator, error) {
 	clientConfig, err := provider.NewConfig()
 	if err != nil {
 		return nil, err

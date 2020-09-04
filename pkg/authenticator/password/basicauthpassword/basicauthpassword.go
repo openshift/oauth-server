@@ -12,6 +12,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 
 	authapi "github.com/openshift/oauth-server/pkg/api"
+	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/authenticator/identitymapper"
 )
 
@@ -57,7 +58,7 @@ var RedirectAttemptedError = errors.New("Redirect attempted")
 // New returns an authenticator which will make a basic auth call to the given url.
 // A custom transport can be provided (typically to customize TLS options like trusted roots or present a client certificate).
 // If no transport is provided, http.DefaultTransport is used
-func New(providerName string, url string, transport http.RoundTripper, mapper authapi.UserIdentityMapper) authenticator.Password {
+func New(providerName string, url string, transport http.RoundTripper, mapper authapi.UserIdentityMapper) openshiftauthenticator.PasswordAuthenticator {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
