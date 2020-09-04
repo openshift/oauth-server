@@ -8,14 +8,14 @@ import (
 	"html/template"
 	"net/http"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apiserver/pkg/authentication/authenticator"
 
-	"github.com/openshift/oauth-server/pkg"
+	oauthserver "github.com/openshift/oauth-server/pkg"
+	"github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
-	"github.com/openshift/oauth-server/pkg/prometheus"
+	metrics "github.com/openshift/oauth-server/pkg/prometheus"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
 	"github.com/openshift/oauth-server/pkg/server/errorpage"
 	"github.com/openshift/oauth-server/pkg/server/redirect"
@@ -45,7 +45,7 @@ var errorMessages = map[string]string{
 }
 
 type PasswordAuthenticator interface {
-	authenticator.Password
+	authenticator.PasswordAuthenticator
 	handlers.AuthenticationSuccessHandler
 }
 

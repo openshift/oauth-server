@@ -7,18 +7,19 @@ import (
 	"strings"
 
 	"k8s.io/apiserver/pkg/authentication/authenticator"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
+	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	metrics "github.com/openshift/oauth-server/pkg/prometheus"
 )
 
 type basicAuthRequestHandler struct {
 	provider              string
-	passwordAuthenticator authenticator.Password
+	passwordAuthenticator openshiftauthenticator.PasswordAuthenticator
 	removeHeader          bool
 }
 
-func NewBasicAuthAuthentication(provider string, passwordAuthenticator authenticator.Password, removeHeader bool) authenticator.Request {
+func NewBasicAuthAuthentication(provider string, passwordAuthenticator openshiftauthenticator.PasswordAuthenticator, removeHeader bool) authenticator.Request {
 	return &basicAuthRequestHandler{provider: provider, passwordAuthenticator: passwordAuthenticator, removeHeader: removeHeader}
 }
 

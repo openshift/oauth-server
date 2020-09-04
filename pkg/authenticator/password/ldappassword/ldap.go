@@ -11,11 +11,13 @@ import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 
 	"gopkg.in/ldap.v2"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/library-go/pkg/security/ldapclient"
 	"github.com/openshift/library-go/pkg/security/ldaputil"
+
 	authapi "github.com/openshift/oauth-server/pkg/api"
+	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/authenticator/identitymapper"
 )
 
@@ -42,7 +44,7 @@ type Authenticator struct {
 }
 
 // New returns an authenticator which will validate usernames/passwords using LDAP.
-func New(providerName string, options Options, mapper authapi.UserIdentityMapper) (authenticator.Password, error) {
+func New(providerName string, options Options, mapper authapi.UserIdentityMapper) (openshiftauthenticator.PasswordAuthenticator, error) {
 	// BZ 1806620: Sometimes connecting to LDAP server might take long due to
 	// network issues causing the request to OAuth server to timeout(60s)
 	// before trying other IDPs even if the user can be authenticated using an

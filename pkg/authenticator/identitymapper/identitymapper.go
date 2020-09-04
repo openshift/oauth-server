@@ -3,7 +3,7 @@ package identitymapper
 import (
 	"fmt"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 
@@ -25,7 +25,7 @@ func ResponseFor(mapper api.UserIdentityMapper, identity api.UserIdentityInfo) (
 
 // logf(...) is the same as klog.V(4).Infof(...) except it reports the caller as the line number
 func logf(format string, args ...interface{}) {
-	if klog.V(4) {
+	if klog.V(4).Enabled() {
 		klog.InfoDepth(2, fmt.Sprintf("identitymapper: "+format, args...))
 	}
 }

@@ -10,11 +10,12 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 
 	authapi "github.com/openshift/oauth-server/pkg/api"
+	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/authenticator/identitymapper"
 )
 
@@ -28,7 +29,7 @@ type Authenticator struct {
 }
 
 // New returns an authenticator which will validate usernames and passwords against the given htpasswd file
-func New(providerName string, file string, mapper authapi.UserIdentityMapper) (authenticator.Password, error) {
+func New(providerName string, file string, mapper authapi.UserIdentityMapper) (openshiftauthenticator.PasswordAuthenticator, error) {
 	auth := &Authenticator{
 		providerName: providerName,
 		file:         file,

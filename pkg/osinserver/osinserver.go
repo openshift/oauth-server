@@ -6,12 +6,12 @@ import (
 	"path"
 
 	"github.com/RangelReale/osin"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/openshift/library-go/pkg/oauth/oauthdiscovery"
-	"github.com/openshift/oauth-server/pkg"
+	oauthserver "github.com/openshift/oauth-server/pkg"
 )
 
 type osinServer struct {
@@ -26,7 +26,7 @@ type osinServer struct {
 type Logger struct{}
 
 func (l Logger) Printf(format string, v ...interface{}) {
-	if klog.V(2) {
+	if klog.V(2).Enabled() {
 		klog.ErrorDepth(3, fmt.Sprintf("osin: "+format, v...))
 	}
 }

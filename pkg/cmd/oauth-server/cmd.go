@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
 	osinv1 "github.com/openshift/api/osin/v1"

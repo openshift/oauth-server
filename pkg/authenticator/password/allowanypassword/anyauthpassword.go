@@ -7,6 +7,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 
 	authapi "github.com/openshift/oauth-server/pkg/api"
+	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/authenticator/identitymapper"
 )
 
@@ -17,7 +18,7 @@ type alwaysAcceptPasswordAuthenticator struct {
 }
 
 // New creates a new password authenticator that approves any login attempt with non-blank username and password
-func New(providerName string, identityMapper authapi.UserIdentityMapper) authenticator.Password {
+func New(providerName string, identityMapper authapi.UserIdentityMapper) openshiftauthenticator.PasswordAuthenticator {
 	return &alwaysAcceptPasswordAuthenticator{providerName, identityMapper}
 }
 

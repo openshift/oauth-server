@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/RangelReale/osin"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 
@@ -70,7 +70,7 @@ func (h *authorizeAuthenticator) HandleAuthorize(ar *osin.AuthorizeRequest, resp
 
 // accessAuthenticator implements osinserver.AccessHandler to ensure non-token requests are authenticated
 type accessAuthenticator struct {
-	password  authenticator.Password
+	password  openshiftauthenticator.PasswordAuthenticator
 	assertion openshiftauthenticator.Assertion
 	client    openshiftauthenticator.Client
 }

@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kuser "k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	oauth "github.com/openshift/api/oauth/v1"
 	oauthclient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
