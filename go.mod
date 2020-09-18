@@ -24,11 +24,11 @@ require (
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gopkg.in/ldap.v2 v2.5.1
-	k8s.io/api v0.18.2
-	k8s.io/apimachinery v0.18.2
-	k8s.io/apiserver v0.18.2
-	k8s.io/client-go v0.18.2
-	k8s.io/component-base v0.18.2
+	k8s.io/api v0.18.9
+	k8s.io/apimachinery v0.18.9
+	k8s.io/apiserver v0.18.9
+	k8s.io/client-go v0.18.9
+	k8s.io/component-base v0.18.9
 	k8s.io/klog v1.0.0
 )
 
