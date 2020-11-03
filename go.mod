@@ -22,7 +22,6 @@ require (
 	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
 	gopkg.in/ldap.v2 v2.5.1
 	k8s.io/api v0.19.2
-	k8s.io/apiserver v0.19.2
 	k8s.io/apimachinery v0.19.2
 	k8s.io/apiserver v0.19.2
 	k8s.io/client-go v0.19.2
@@ -31,8 +30,7 @@ require (
 )
 
 replace (
-    k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20201019143247-401ead4ea686 // points to openshift-apiserver-4.7-kubernetes-1.19.2
-
 	github.com/RangelReale/osin => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
 	github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
+	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20201019143247-401ead4ea686 // points to openshift-apiserver-4.7-kubernetes-1.19.2
 )
