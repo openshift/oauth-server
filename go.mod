@@ -1,6 +1,6 @@
 module github.com/openshift/oauth-server
 
-go 1.14
+go 1.15
 
 require (
 	github.com/RangelReale/osin v0.0.0

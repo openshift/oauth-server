@@ -788,6 +788,6 @@ sigs.k8s.io/structured-merge-diff/v4/typed
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
-# k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20201019143247-401ead4ea686
 # github.com/RangelReale/osin => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
 # github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
+# k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20201019143247-401ead4ea686
