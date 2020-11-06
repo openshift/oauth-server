@@ -186,6 +186,12 @@ func (s *DelegatingAuthorizationOptions) getClient() (kubernetes.Interface, erro
 	// set high qps/burst limits since this will effectively limit API server responsiveness
 	clientConfig.QPS = 200
 	clientConfig.Burst = 400
+	clientConfig.Timeout = 10 * time.Second
 
-	return kubernetes.NewForConfig(clientConfig)
+	// make the client use protobuf
+	protoConfig := rest.CopyConfig(clientConfig)
+	protoConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+	protoConfig.ContentType = "application/vnd.kubernetes.protobuf"
+
+	return kubernetes.NewForConfig(protoConfig)
 }
