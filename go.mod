@@ -12,10 +12,10 @@ require (
 	github.com/gorilla/sessions v0.0.0-20171008214740-a3acf13e802c
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.10.0 // indirect
-	github.com/openshift/api v0.0.0-20200827090112-c05698d102cf
-	github.com/openshift/build-machinery-go v0.0.0-20200819073603-48aa266c95f7
-	github.com/openshift/client-go v0.0.0-20200827190008-3062137373b5
-	github.com/openshift/library-go v0.0.0-20200902171820-35f48b6ef30c
+	github.com/openshift/api v0.0.0-20201019163320-c6a5ec25f267
+	github.com/openshift/build-machinery-go v0.0.0-20200917070002-f171684f77ab
+	github.com/openshift/client-go v0.0.0-20201020074620-f8fd44879f7c
+	github.com/openshift/library-go v0.0.0-20201104144938-58b60c8e9aca
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
@@ -33,4 +33,5 @@ replace (
 	github.com/RangelReale/osin => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
 	github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20201019143247-401ead4ea686 // points to openshift-apiserver-4.7-kubernetes-1.19.2
+	k8s.io/client-go => github.com/openshift/kubernetes-client-go v0.0.0-20201104094117-806c7d66cfea
 )
