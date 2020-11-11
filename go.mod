@@ -32,6 +32,6 @@ require (
 replace (
 	github.com/RangelReale/osin => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
 	github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
-	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20201019143247-401ead4ea686 // points to openshift-apiserver-4.7-kubernetes-1.19.2
+	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20201110074854-ee87de0d9d20 // points to openshift-apiserver-4.7-kubernetes-1.19.2
 	k8s.io/client-go => github.com/openshift/kubernetes-client-go v0.0.0-20201104094117-806c7d66cfea
 )
