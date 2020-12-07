@@ -15,7 +15,7 @@ require (
 	github.com/openshift/api v0.0.0-20200827090112-c05698d102cf
 	github.com/openshift/build-machinery-go v0.0.0-20200819073603-48aa266c95f7
 	github.com/openshift/client-go v0.0.0-20200827190008-3062137373b5
-	github.com/openshift/library-go v0.0.0-20200902171820-35f48b6ef30c
+	github.com/openshift/library-go v0.0.0-20201123124259-522c6f69be23
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
@@ -33,4 +33,5 @@ replace (
 	github.com/RangelReale/osin => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
 	github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20201207110950-476028df0fd8 // points to openshift-apiserver-4.6-kubernetes-1.19.0
+	k8s.io/client-go => github.com/openshift/kubernetes-client-go v0.0.0-20201207133257-210b92e25f6a
 )
