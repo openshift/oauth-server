@@ -103,7 +103,7 @@ github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 github.com/munnerz/goautoneg
-# github.com/openshift/api v0.0.0-20200429152225-b98a784d8e6d
+# github.com/openshift/api v0.0.0-20200521101457-60c476765272
 github.com/openshift/api/config/v1
 github.com/openshift/api/oauth/v1
 github.com/openshift/api/operator/v1alpha1
@@ -119,7 +119,7 @@ github.com/openshift/build-machinery-go/make/targets/golang
 github.com/openshift/build-machinery-go/make/targets/openshift
 github.com/openshift/build-machinery-go/make/targets/openshift/operator
 github.com/openshift/build-machinery-go/scripts
-# github.com/openshift/client-go v0.0.0-20200422192633-6f6c07fc2a70
+# github.com/openshift/client-go v0.0.0-20200521150516-05eb9880269c
 github.com/openshift/client-go/oauth/clientset/versioned
 github.com/openshift/client-go/oauth/clientset/versioned/fake
 github.com/openshift/client-go/oauth/clientset/versioned/scheme
@@ -132,7 +132,7 @@ github.com/openshift/client-go/user/clientset/versioned/fake
 github.com/openshift/client-go/user/clientset/versioned/scheme
 github.com/openshift/client-go/user/clientset/versioned/typed/user/v1
 github.com/openshift/client-go/user/clientset/versioned/typed/user/v1/fake
-# github.com/openshift/library-go v0.0.0-20200429122220-9e6c27e916a0
+# github.com/openshift/library-go v0.0.0-20201209131625-07b0830b8740
 github.com/openshift/library-go/pkg/apiserver/httprequest
 github.com/openshift/library-go/pkg/authentication/bootstrapauthenticator
 github.com/openshift/library-go/pkg/authorization/scopemetadata
@@ -140,6 +140,7 @@ github.com/openshift/library-go/pkg/config/client
 github.com/openshift/library-go/pkg/config/helpers
 github.com/openshift/library-go/pkg/config/serving
 github.com/openshift/library-go/pkg/controller/metrics
+github.com/openshift/library-go/pkg/network
 github.com/openshift/library-go/pkg/oauth/oauthdiscovery
 github.com/openshift/library-go/pkg/oauth/oauthserviceaccountclient
 github.com/openshift/library-go/pkg/security/ldapclient
@@ -515,7 +516,7 @@ k8s.io/apiserver/plugin/pkg/audit/truncate
 k8s.io/apiserver/plugin/pkg/audit/webhook
 k8s.io/apiserver/plugin/pkg/authenticator/token/webhook
 k8s.io/apiserver/plugin/pkg/authorizer/webhook
-# k8s.io/client-go v0.18.9
+# k8s.io/client-go v0.18.9 => github.com/openshift/kubernetes-client-go v0.0.0-20201209131240-ad062a7baf0b
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/fake
 k8s.io/client-go/informers
