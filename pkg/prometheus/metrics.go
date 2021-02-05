@@ -16,19 +16,19 @@ const (
 )
 
 var (
-	authPasswordTotal = metrics.NewCounterVec(
+	authPasswordTotal = metrics.NewCounter(
 		&metrics.CounterOpts{
 			Subsystem: authSubsystem,
 			Name:      "password_total",
 			Help:      "Counts total password authentication attempts",
-		}, []string{},
+		},
 	)
-	authFormCounter = metrics.NewCounterVec(
+	authFormCounter = metrics.NewCounter(
 		&metrics.CounterOpts{
 			Subsystem: authSubsystem,
 			Name:      "form_password_count",
 			Help:      "Counts form password authentication attempts",
-		}, []string{},
+		},
 	)
 	authFormCounterResult = metrics.NewCounterVec(
 		&metrics.CounterOpts{
@@ -37,12 +37,12 @@ var (
 			Help:      "Counts form password authentication attempts by result",
 		}, []string{"result"},
 	)
-	authBasicCounter = metrics.NewCounterVec(
+	authBasicCounter = metrics.NewCounter(
 		&metrics.CounterOpts{
 			Subsystem: authSubsystem,
 			Name:      "basic_password_count",
 			Help:      "Counts basic password authentication attempts",
-		}, []string{},
+		},
 	)
 	authBasicCounterResult = metrics.NewCounterVec(
 		&metrics.CounterOpts{
@@ -59,16 +59,21 @@ func init() {
 	legacyregistry.MustRegister(authFormCounterResult)
 	legacyregistry.MustRegister(authBasicCounter)
 	legacyregistry.MustRegister(authBasicCounterResult)
+
+	for _, resultLabel := range []string{SuccessResult, FailResult, ErrorResult} {
+		authBasicCounterResult.WithLabelValues(resultLabel)
+		authFormCounterResult.WithLabelValues(resultLabel)
+	}
 }
 
 func RecordBasicPasswordAuth(result string) {
-	authPasswordTotal.WithLabelValues().Inc()
-	authBasicCounter.WithLabelValues().Inc()
+	authPasswordTotal.Inc()
+	authBasicCounter.Inc()
 	authBasicCounterResult.WithLabelValues(result).Inc()
 }
 
 func RecordFormPasswordAuth(result string) {
-	authPasswordTotal.WithLabelValues().Inc()
-	authFormCounter.WithLabelValues().Inc()
+	authPasswordTotal.Inc()
+	authFormCounter.Inc()
 	authFormCounterResult.WithLabelValues(result).Inc()
 }
