@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -62,9 +64,10 @@ type DefaultUserIdentityInfo struct {
 
 // NewDefaultUserIdentityInfo returns a DefaultUserIdentityInfo with a non-nil Extra component
 func NewDefaultUserIdentityInfo(providerName, providerUserName string) *DefaultUserIdentityInfo {
+	userName := urlEncodeIfNecessary(providerUserName)
 	return &DefaultUserIdentityInfo{
 		ProviderName:     providerName,
-		ProviderUserName: providerUserName,
+		ProviderUserName: userName,
 		Extra:            map[string]string{},
 	}
 }
@@ -83,6 +86,13 @@ func (i *DefaultUserIdentityInfo) GetProviderUserName() string {
 
 func (i *DefaultUserIdentityInfo) GetExtra() map[string]string {
 	return i.Extra
+}
+
+func urlEncodeIfNecessary(s string) string {
+	if strings.ContainsAny(s, ":/") {
+		return "b64:" + base64.RawStdEncoding.EncodeToString([]byte(s))
+	}
+	return s
 }
 
 // ProviderInfo represents display information for an oauth identity provider.  This is used by the
