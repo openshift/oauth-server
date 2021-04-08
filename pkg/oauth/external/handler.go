@@ -122,7 +122,7 @@ func (h *Handler) AuthenticatePassword(ctx context.Context, username, password s
 			// An invalid_grant error means the username/password was rejected
 			return nil, false, nil
 		}
-		klog.V(4).Infof("Error getting access token using resource owner password grant: %v", err)
+		klog.V(2).Infof("Error getting access token from an external OIDC provider (%s) using resource owner password grant: %v", accessReq.GetTokenUrl(), err)
 		return nil, false, err
 	}
 
@@ -174,7 +174,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	accessReq := h.client.NewAccessRequest(osincli.AUTHORIZATION_CODE, authData)
 	accessData, err := accessReq.GetToken()
 	if err != nil {
-		klog.V(4).Infof("Error getting access token: %v", err)
+		klog.V(2).Infof("Error getting access token from an external OIDC provider (%s): %v", accessReq.GetTokenUrl(), err)
 		h.handleError(err, w, req)
 		return
 	}
