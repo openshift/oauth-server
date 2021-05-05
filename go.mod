@@ -20,6 +20,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/text v0.3.4
 	gopkg.in/ldap.v2 v2.5.1
 	k8s.io/api v0.21.0
 	k8s.io/apimachinery v0.21.0
