@@ -18,6 +18,7 @@ import (
 	metrics "github.com/openshift/oauth-server/pkg/prometheus"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
 	"github.com/openshift/oauth-server/pkg/server/errorpage"
+	"github.com/openshift/oauth-server/pkg/server/locales"
 	"github.com/openshift/oauth-server/pkg/server/redirect"
 )
 
@@ -63,6 +64,8 @@ type LoginForm struct {
 
 	Names  LoginFormFields
 	Values LoginFormFields
+
+	Locale locales.Localization
 }
 
 type LoginFormFields struct {
@@ -128,6 +131,7 @@ func (l *Login) handleLoginForm(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	form.Locale = locales.GetLocale(req.Header.Get("Accept-Language"))
 	form.ErrorCode = req.URL.Query().Get(reasonParam)
 	if len(form.ErrorCode) > 0 {
 		if msg, hasMsg := errorMessages[form.ErrorCode]; hasMsg {

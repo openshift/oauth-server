@@ -10,6 +10,8 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/library-go/pkg/apiserver/httprequest"
+
+	"github.com/openshift/oauth-server/pkg/server/locales"
 )
 
 // ErrorPage implements auth and grant error handling by rendering an error page for browser-like clients
@@ -56,6 +58,7 @@ func (p *ErrorPage) GrantError(err error, w http.ResponseWriter, req *http.Reque
 type ErrorData struct {
 	Error     string
 	ErrorCode string
+	Locale    locales.Localization
 }
 
 // ErrorPageRenderer handles rendering a given error code/message
@@ -88,6 +91,7 @@ func NewErrorPageTemplateRenderer(templateFile string) (ErrorPageRenderer, error
 func (r *errorPageTemplateRenderer) Render(data ErrorData, w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+	data.Locale = locales.GetLocale(req.Header.Get("Accept-Language"))
 	if err := r.errorPageTemplate.Execute(w, data); err != nil {
 		utilruntime.HandleError(fmt.Errorf("unable to render error page template: %v", err))
 	}

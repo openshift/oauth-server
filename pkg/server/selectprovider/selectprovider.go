@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
+	"github.com/openshift/oauth-server/pkg/server/locales"
 )
 
 type SelectProviderRenderer interface {
@@ -31,6 +32,7 @@ func NewSelectProvider(render SelectProviderRenderer, forceInterstitial bool) ha
 
 type ProviderData struct {
 	Providers []api.ProviderInfo
+	Locale    locales.Localization
 }
 
 // NewSelectProviderRenderer creates a select provider renderer that takes in an optional custom template to
@@ -108,7 +110,8 @@ type selectProviderTemplateRenderer struct {
 func (r selectProviderTemplateRenderer) Render(providers []api.ProviderInfo, w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	if err := r.selectProviderTemplate.Execute(w, ProviderData{Providers: providers}); err != nil {
+	locale := locales.GetLocale(req.Header.Get("Accept-Language"))
+	if err := r.selectProviderTemplate.Execute(w, ProviderData{Providers: providers, Locale: locale}); err != nil {
 		utilruntime.HandleError(fmt.Errorf("unable to render select provider template: %v", err))
 	}
 }
