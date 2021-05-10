@@ -40,9 +40,9 @@ const (
 // Error messages that correlate to the error codes above.
 // General authentication error messages are found in the error page package
 var errorMessages = map[string]string{
-	errorCodeUserRequired: "Login is required. Please try again.",
-	errorCodeTokenExpired: "Could not check CSRF token. Please try again.",
-	errorCodeAccessDenied: "Invalid login or password. Please try again.",
+	errorCodeUserRequired: "LoginIsRequiredPleaseTryAgain",
+	errorCodeTokenExpired: "CouldNotCheckCSRFTokenPleaseTryAgain",
+	errorCodeAccessDenied: "InvalidLoginOrPasswordPleaseTryAgain",
 }
 
 type PasswordAuthenticator interface {
@@ -134,7 +134,7 @@ func (l *Login) handleLoginForm(w http.ResponseWriter, req *http.Request) {
 	form.Locale = locales.GetLocale(req.Header.Get("Accept-Language"))
 	form.ErrorCode = req.URL.Query().Get(reasonParam)
 	if len(form.ErrorCode) > 0 {
-		if msg, hasMsg := errorMessages[form.ErrorCode]; hasMsg {
+		if msg, hasMsg := form.Locale[errorMessages[form.ErrorCode]]; hasMsg {
 			form.Error = msg
 		} else {
 			form.Error = errorpage.AuthenticationErrorMessage(form.ErrorCode)
