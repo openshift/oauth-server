@@ -108,7 +108,7 @@ func (c *OAuthServerConfig) WithOAuth(handler http.Handler) (http.Handler, error
 	if timeout := c.ExtraOAuthConfig.Options.TokenConfig.AccessTokenInactivityTimeout; timeout != nil {
 		tokentimeout = int32(timeout.Seconds())
 	}
-	storage := registrystorage.New(c.ExtraOAuthConfig.OAuthAccessTokenClient, c.ExtraOAuthConfig.OAuthAuthorizeTokenClient, combinedOAuthClientGetter, tokentimeout)
+	storage := registrystorage.New(c.ExtraOAuthConfig.OAuthAccessTokenClient, c.ExtraOAuthConfig.OAuthAuthorizeTokenClient, combinedOAuthClientGetter, c.ExtraOAuthConfig.TokenReviewClient, tokentimeout)
 	config := osinserver.NewDefaultServerConfig()
 	if authorizationExpiration := c.ExtraOAuthConfig.Options.TokenConfig.AuthorizeTokenMaxAgeSeconds; authorizationExpiration > 0 {
 		config.AuthorizationExpiration = authorizationExpiration
