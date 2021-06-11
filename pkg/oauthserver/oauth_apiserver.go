@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	kclientset "k8s.io/client-go/kubernetes"
+	authenticationv1client "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 
@@ -153,6 +154,7 @@ func NewOAuthServerConfig(oauthConfig osinv1.OAuthConfig, userClientConfig *rest
 			OAuthClientAuthorizationClient: oauthClient.OAuthClientAuthorizations(),
 			SessionAuth:                    sessionAuth,
 			BootstrapUserDataGetter:        bootstrapUserDataGetter,
+			TokenReviewClient:              kubeClient.AuthenticationV1().TokenReviews(),
 		},
 	}
 	genericConfig.BuildHandlerChainFunc = ret.buildHandlerChainForOAuth
@@ -250,6 +252,7 @@ type ExtraOAuthConfig struct {
 	SessionAuth session.SessionAuthenticator
 
 	BootstrapUserDataGetter bootstrap.BootstrapUserDataGetter
+	TokenReviewClient       authenticationv1client.TokenReviewInterface
 }
 
 type OAuthServerConfig struct {

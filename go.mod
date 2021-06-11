@@ -21,6 +21,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/text v0.3.4
 	gopkg.in/ldap.v2 v2.5.1
+	gopkg.in/square/go-jose.v2 v2.2.2
 	k8s.io/api v0.21.0
 	k8s.io/apimachinery v0.21.0
 	k8s.io/apiserver v0.21.0

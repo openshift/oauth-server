@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	oauthfake "github.com/openshift/client-go/oauth/clientset/versioned/fake"
@@ -281,7 +282,8 @@ func TestRegistryAndServer(t *testing.T) {
 			objs = append(objs, testCase.ClientAuth)
 		}
 		fakeOAuthClient := oauthfake.NewSimpleClientset(objs...)
-		storage := registrystorage.New(fakeOAuthClient.OauthV1().OAuthAccessTokens(), fakeOAuthClient.OauthV1().OAuthAuthorizeTokens(), fakeOAuthClient.OauthV1().OAuthClients(), 0)
+		fakeTokenReviewClient := kubefake.NewSimpleClientset()
+		storage := registrystorage.New(fakeOAuthClient.OauthV1().OAuthAccessTokens(), fakeOAuthClient.OauthV1().OAuthAuthorizeTokens(), fakeOAuthClient.OauthV1().OAuthClients(), fakeTokenReviewClient.AuthenticationV1().TokenReviews(), 0)
 		config := osinserver.NewDefaultServerConfig()
 
 		h.AuthorizeHandler = osinserver.AuthorizeHandlers{

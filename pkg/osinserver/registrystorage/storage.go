@@ -7,10 +7,14 @@ import (
 	"strings"
 
 	"github.com/RangelReale/osin"
+	"gopkg.in/square/go-jose.v2/jwt"
 
+	tokenreviewv1 "k8s.io/api/authentication/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
 	kuser "k8s.io/apiserver/pkg/authentication/user"
+	authenticationv1client "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	"k8s.io/klog/v2"
 
 	oauthapi "github.com/openshift/api/oauth/v1"
@@ -26,22 +30,25 @@ import (
 type storage struct {
 	accesstoken    oauthclient.OAuthAccessTokenInterface
 	authorizetoken oauthclient.OAuthAuthorizeTokenInterface
+	tokenReview    authenticationv1client.TokenReviewInterface
 	client         api.OAuthClientGetter
 	tokentimeout   int32
 }
 
-func New(access oauthclient.OAuthAccessTokenInterface, authorize oauthclient.OAuthAuthorizeTokenInterface, client api.OAuthClientGetter, tokentimeout int32) osin.Storage {
+func New(access oauthclient.OAuthAccessTokenInterface, authorize oauthclient.OAuthAuthorizeTokenInterface, client api.OAuthClientGetter, tokenReview authenticationv1client.TokenReviewInterface, tokentimeout int32) osin.Storage {
 	return &storage{
 		accesstoken:    access,
 		authorizetoken: authorize,
 		client:         client,
 		tokentimeout:   tokentimeout,
+		tokenReview:    tokenReview,
 	}
 }
 
 type clientWrapper struct {
-	id     string
-	client *oauthapi.OAuthClient
+	id          string
+	client      *oauthapi.OAuthClient
+	reviewToken func(ctx context.Context, token string, audiences []string) (*tokenreviewv1.TokenReview, error)
 }
 
 // Ensure we implement the secret matcher method that allows us to validate multiple secrets
@@ -68,6 +75,32 @@ func (w *clientWrapper) ClientSecretMatches(secret string) bool {
 		if crypto.IsEqualConstantTime(additionalSecret, secret) {
 			return true
 		}
+	}
+
+	// assume this is an SA token
+	tok, err := jwt.ParseSigned(secret)
+	if err != nil {
+		return false
+	}
+
+	if tok != nil {
+		public := &jwt.Claims{}
+		err := tok.UnsafeClaimsWithoutVerification(public)
+		if err != nil {
+			klog.V(4).Infof("failed to get unsafe claims: %v", err)
+			return false
+		}
+		tokenAuds := authenticator.Audiences(public.Audience)
+		tokenReview, err := w.reviewToken(context.TODO(), secret, tokenAuds)
+		if err != nil {
+			klog.V(4).Infof("the tokenreview failed: %v", err)
+			return false
+		}
+
+		if tokenReview.Status.User.Username != w.client.Name {
+			return false
+		}
+		return true
 	}
 
 	return false
@@ -113,7 +146,13 @@ func (s *storage) GetClient(id string) (osin.Client, error) {
 		}
 		return nil, err
 	}
-	return &clientWrapper{id, c}, nil
+	return &clientWrapper{id, c, newTokenReviewer(s.tokenReview)}, nil
+}
+
+func newTokenReviewer(tokenReviewer authenticationv1client.TokenReviewInterface) func(ctx context.Context, token string, audiences []string) (*tokenreviewv1.TokenReview, error) {
+	return func(ctx context.Context, token string, audiences []string) (*tokenreviewv1.TokenReview, error) {
+		return tokenReviewer.Create(ctx, &tokenreviewv1.TokenReview{Spec: tokenreviewv1.TokenReviewSpec{Token: token, Audiences: audiences}}, metav1.CreateOptions{})
+	}
 }
 
 // SaveAuthorize saves authorize data.
@@ -226,7 +265,7 @@ func (s *storage) convertFromAuthorizeToken(code string, authorize *oauthapi.OAu
 		Code:                code,
 		CodeChallenge:       authorize.CodeChallenge,
 		CodeChallengeMethod: authorize.CodeChallengeMethod,
-		Client:              &clientWrapper{authorize.ClientName, client},
+		Client:              &clientWrapper{authorize.ClientName, client, newTokenReviewer(s.tokenReview)},
 		ExpiresIn:           int32(authorize.ExpiresIn),
 		Scope:               scopecovers.Join(authorize.Scopes),
 		RedirectUri:         authorize.RedirectURI,
@@ -284,7 +323,7 @@ func (s *storage) convertFromAccessToken(code string, access *oauthapi.OAuthAcce
 	return &osin.AccessData{
 		AccessToken:  code,
 		RefreshToken: access.RefreshToken,
-		Client:       &clientWrapper{access.ClientName, client},
+		Client:       &clientWrapper{access.ClientName, client, newTokenReviewer(s.tokenReview)},
 		ExpiresIn:    int32(access.ExpiresIn),
 		Scope:        scopecovers.Join(access.Scopes),
 		RedirectUri:  access.RedirectURI,
