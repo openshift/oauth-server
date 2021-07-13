@@ -1,10 +1,10 @@
-FROM registry.svc.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
 WORKDIR /go/src/github.com/openshift/oauth-server
 COPY . .
 ENV GO_PACKAGE github.com/openshift/oauth-server
 RUN make build --warn-undefined-variables
 
-FROM registry.svc.ci.openshift.org/ocp/4.7:base
+FROM registry.ci.openshift.org/ocp/4.7:base
 COPY --from=builder /go/src/github.com/openshift/oauth-server/oauth-server /usr/bin/
 ENTRYPOINT ["/usr/bin/oauth-server"]
 LABEL io.k8s.display-name="OpenShift OAuth Server" \
