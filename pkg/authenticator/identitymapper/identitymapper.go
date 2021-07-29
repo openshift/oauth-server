@@ -11,8 +11,8 @@ import (
 )
 
 // ResponseFor bridges the UserIdentityMapper interface with the authenticator.{Password|Request} interfaces
-func ResponseFor(mapper api.UserIdentityMapper, identity api.UserIdentityInfo) (*authenticator.Response, bool, error) {
-	user, err := mapper.UserFor(identity)
+func ResponseFor(userMapper api.UserIdentityMapper, identity api.UserIdentityInfo) (*authenticator.Response, bool, error) {
+	user, err := userMapper.UserFor(identity)
 	if err != nil {
 		logf("error creating or updating mapping for: %#v due to %v", identity, err)
 		return nil, false, err

@@ -42,6 +42,7 @@ type Config struct {
 	PreferredUsernameClaims []string
 	EmailClaims             []string
 	NameClaims              []string
+	GroupClaims             []string
 
 	IDTokenValidator TokenValidator
 }
@@ -212,6 +213,10 @@ func (p provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentit
 		identity.Extra[authapi.IdentityDisplayNameKey] = name
 	}
 
+	if groups, ok := getArrayOrStringClaimValue(claims, p.GroupClaims...); ok {
+		identity.ProviderGroups = groups
+	}
+
 	klog.V(4).Infof("identity=%#v", identity)
 
 	return identity, true, nil
@@ -225,6 +230,26 @@ func getClaimValue(data map[string]interface{}, claims ...string) (string, bool)
 		}
 	}
 	return "", false
+}
+
+func getArrayOrStringClaimValue(data map[string]interface{}, claims ...string) ([]string, bool) {
+	for _, claim := range claims {
+		val, ok := data[claim]
+		if !ok {
+			continue
+		}
+		switch valTyped := val.(type) {
+		case []interface{}:
+			ret := make([]string, len(valTyped))
+			for _, s := range valTyped {
+				ret = append(ret, s.(string))
+			}
+			return ret, true
+		case string:
+			return []string{valTyped}, true
+		}
+	}
+	return nil, false
 }
 
 // fetch and decode JSON from the given UserInfo URL
