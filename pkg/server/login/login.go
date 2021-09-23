@@ -184,6 +184,7 @@ func (l *Login) handleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	klog.V(4).Infof(`Login with provider %q succeeded for %q: %#v`, l.provider, username, authResponse.User)
+	authResponse.User // make user into an event -> send event to auditlog
 	l.auth.AuthenticationSucceeded(authResponse.User, then, w, req)
 }
 
