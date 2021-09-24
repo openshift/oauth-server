@@ -16,6 +16,7 @@ require (
 	github.com/openshift/library-go v0.0.0-20211013122800-874db8a3dac9
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/text v0.3.6
