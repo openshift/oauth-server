@@ -2,6 +2,10 @@ apiVersion: audit.k8s.io/v1
 kind: Policy
 # exclude resources where the body is security-sensitive
 - level: Metadata
+  namespace: oauth-server
+  name: oauth-server
+  labels:
+    app: oauth-server
   resources:
     - group: "route.openshift.io"
       resources: ["routes"]
