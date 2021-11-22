@@ -240,7 +240,7 @@ func getArrayOrStringClaimValue(data map[string]interface{}, claims ...string) (
 		}
 		switch valTyped := val.(type) {
 		case []interface{}:
-			ret := make([]string, len(valTyped))
+			ret := make([]string, 0, len(valTyped))
 			for _, s := range valTyped {
 				ret = append(ret, s.(string))
 			}
