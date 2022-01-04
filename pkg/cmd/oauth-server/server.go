@@ -17,6 +17,7 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/authorization/path"
 	genericapiserver "k8s.io/apiserver/pkg/server"
+	"k8s.io/apiserver/pkg/server/options"
 	genericapiserveroptions "k8s.io/apiserver/pkg/server/options"
 
 	osinv1 "github.com/openshift/api/osin/v1"
@@ -28,12 +29,15 @@ import (
 	_ "github.com/openshift/library-go/pkg/controller/metrics"
 )
 
-func RunOsinServer(osinConfig *osinv1.OsinServerConfig, stopCh <-chan struct{}) error {
+// RunOsinServer starts a server that is based on the osin and kubernetes/apiserver frameworks.
+//
+// AuditOptions could be changed into a general options solution.
+func RunOsinServer(osinConfig *osinv1.OsinServerConfig, audit *options.AuditOptions, stopCh <-chan struct{}) error {
 	if osinConfig == nil {
 		return errors.New("osin server requires non-empty oauthConfig")
 	}
 
-	oauthServerConfig, err := newOAuthServerConfig(osinConfig)
+	oauthServerConfig, err := newOAuthServerConfig(osinConfig, audit)
 	if err != nil {
 		return err
 	}
@@ -46,7 +50,7 @@ func RunOsinServer(osinConfig *osinv1.OsinServerConfig, stopCh <-chan struct{}) 
 	return oauthServer.GenericAPIServer.PrepareRun().Run(stopCh)
 }
 
-func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig) (*oauthserver.OAuthServerConfig, error) {
+func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig, audit *options.AuditOptions) (*oauthserver.OAuthServerConfig, error) {
 	scheme := runtime.NewScheme()
 	metav1.AddToGroupVersion(scheme, corev1.SchemeGroupVersion)
 	genericConfig := genericapiserver.NewRecommendedConfig(serializer.NewCodecFactory(scheme))
@@ -58,6 +62,10 @@ func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig) (*oauthserver.OAu
 	if err := servingOptions.ApplyTo(&genericConfig.Config.SecureServing, &genericConfig.Config.LoopbackClientConfig); err != nil {
 		return nil, err
 	}
+	if err := audit.ApplyTo(&genericConfig.Config); err != nil {
+		return nil, err
+	}
+
 	// the oauth-server must only run in http1 to avoid http2 connection re-use problems when improperly re-using a wildcard certificate
 	genericConfig.Config.SecureServing.DisableHTTP2 = true
 
@@ -122,10 +130,7 @@ func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig) (*oauthserver.OAu
 		return nil, err
 	}
 
-	// TODO you probably want to set this
 	oauthServerConfig.GenericConfig.CorsAllowedOriginList = osinConfig.CORSAllowedOrigins
-	//oauthServerConfig.GenericConfig.AuditBackend = genericConfig.AuditBackend
-	//oauthServerConfig.GenericConfig.AuditPolicyChecker = genericConfig.AuditPolicyChecker
 
 	return oauthServerConfig, nil
 }

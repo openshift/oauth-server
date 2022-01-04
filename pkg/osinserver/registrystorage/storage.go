@@ -35,7 +35,13 @@ type storage struct {
 	tokentimeout   int32
 }
 
-func New(access oauthclient.OAuthAccessTokenInterface, authorize oauthclient.OAuthAuthorizeTokenInterface, client api.OAuthClientGetter, tokenReview authenticationv1client.TokenReviewInterface, tokentimeout int32) osin.Storage {
+func New(
+	access oauthclient.OAuthAccessTokenInterface,
+	authorize oauthclient.OAuthAuthorizeTokenInterface,
+	client api.OAuthClientGetter,
+	tokenReview authenticationv1client.TokenReviewInterface,
+	tokentimeout int32,
+) osin.Storage {
 	return &storage{
 		accesstoken:    access,
 		authorizetoken: authorize,

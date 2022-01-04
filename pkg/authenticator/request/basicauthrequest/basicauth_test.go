@@ -2,11 +2,19 @@ package basicauthrequest
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
+	"github.com/openshift/oauth-server/pkg/audit"
+
+	apiaudit "k8s.io/apiserver/pkg/apis/audit"
+	kaudit "k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/apiserver/pkg/authorization/authorizer"
 )
 
 const (
@@ -35,6 +43,7 @@ func TestAuthenticateRequestValid(t *testing.T) {
 	authRequestHandler := NewBasicAuthAuthentication("example", passwordAuthenticator, true)
 	req, _ := http.NewRequest("GET", "http://example.org", nil)
 	req.SetBasicAuth(Username, Password)
+	req = req.WithContext(kaudit.WithAuditAnnotations(req.Context()))
 
 	_, _, _ = authRequestHandler.AuthenticateRequest(req)
 	if passwordAuthenticator.passedUser != Username {
@@ -42,6 +51,9 @@ func TestAuthenticateRequestValid(t *testing.T) {
 	}
 	if passwordAuthenticator.passedPassword != Password {
 		t.Errorf("Expected %v, got %v", Password, passwordAuthenticator.passedPassword)
+	}
+	if err := verifyAnnotations(t, req, Username); err != nil {
+		t.Error(err)
 	}
 }
 
@@ -171,4 +183,31 @@ func TestGetBasicAuthInfoNotCredentials(t *testing.T) {
 	if len(password) != 0 {
 		t.Errorf("Unexpected password: %v", password)
 	}
+}
+
+func verifyAnnotations(t *testing.T, req *http.Request, want string) error {
+	ev, err := kaudit.NewEventFromRequest(
+		req, time.Now(),
+		apiaudit.LevelRequestResponse,
+		&authorizer.AttributesRecord{},
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ev.Annotations) == 0 {
+		return errors.New("ev.Annotations is empty")
+	}
+
+	have, ok := ev.Annotations[audit.UsernameAnnotation]
+	if !ok {
+		return fmt.Errorf("Didn't find %s", audit.UsernameAnnotation)
+	}
+
+	if have != want {
+		return fmt.Errorf("have: %s, want: %s", have, want)
+	}
+
+	return nil
 }

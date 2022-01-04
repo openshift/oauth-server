@@ -54,7 +54,7 @@ func NewOpenshiftIntegratedOAuthServerCommand(stopCh <-chan struct{}) *cobra.Com
 		},
 	}
 
-	startOsin := openshift_integrated_oauth_server.NewOsinServer(os.Stdout, os.Stderr, stopCh)
+	startOsin := openshift_integrated_oauth_server.NewOsinServerCommand(os.Stdout, os.Stderr, stopCh)
 	cmd.AddCommand(startOsin)
 
 	return cmd

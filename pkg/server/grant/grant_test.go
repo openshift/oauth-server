@@ -46,7 +46,6 @@ func emptyClientRegistry() api.OAuthClientGetter {
 
 func goodClientRegistry(clientID string, redirectURIs []string, literalScopes []string) api.OAuthClientGetter {
 	client := &oapi.OAuthClient{ObjectMeta: metav1.ObjectMeta{Name: clientID}, Secret: "mysecret", RedirectURIs: redirectURIs}
-	client.Name = clientID
 	if len(literalScopes) > 0 {
 		client.ScopeRestrictions = []oapi.ScopeRestriction{{ExactValues: literalScopes}}
 	}
