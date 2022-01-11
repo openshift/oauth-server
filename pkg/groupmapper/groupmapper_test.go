@@ -288,6 +288,20 @@ func TestUserGroupsMapper_addUserToGroup(t *testing.T) {
 			expectEvent:   true,
 		},
 		{
+			name:          "group with no annotations yet - user missng",
+			username:      "user2",
+			group:         removeGroupAnnotations(createGroupWithUsers(testGroupName, "user1", "user2", "user3", "user4")),
+			expectedGroup: removeGeneratedKeyFromGroup(createGroupWithUsers(testGroupName, "user1", "user2", "user3", "user4")),
+			expectEvent:   true,
+		},
+		{
+			name:          "group with no annotations yet - user present",
+			username:      "user2",
+			group:         removeGroupAnnotations(createGroupWithUsers(testGroupName, "user1", "user3", "user4")),
+			expectedGroup: removeGeneratedKeyFromGroup(createGroupWithUsers(testGroupName, "user1", "user3", "user4", "user2")),
+			expectEvent:   true,
+		},
+		{
 			name:          "user already in group",
 			username:      "user3",
 			group:         createGroupWithUsers(testGroupName, "user1", "user2", "user3", "user4"),
@@ -375,6 +389,11 @@ func removeGeneratedKeyFromGroup(g *userv1.Group) *userv1.Group {
 
 func removeSyncedKeyFromGroup(g *userv1.Group, idpName string) *userv1.Group {
 	delete(g.Annotations, fmt.Sprintf(groupSyncedKeyFmt, idpName))
+	return g
+}
+
+func removeGroupAnnotations(g *userv1.Group) *userv1.Group {
+	g.Annotations = nil
 	return g
 }
 
