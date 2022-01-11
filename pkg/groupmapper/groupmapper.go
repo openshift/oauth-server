@@ -189,6 +189,10 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 		return err
 	}
 
+	if updatedGroup.Annotations == nil {
+		updatedGroup.Annotations = map[string]string{}
+	}
+
 	var onlyAddAnnotation bool
 	for _, u := range updatedGroup.Users {
 		if u == username {
