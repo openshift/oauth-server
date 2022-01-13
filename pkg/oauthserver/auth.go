@@ -26,14 +26,18 @@ import (
 	"k8s.io/client-go/util/cert"
 	"k8s.io/klog/v2"
 
+	configv1 "github.com/openshift/api/config/v1"
 	oauthapi "github.com/openshift/api/oauth/v1"
 	osinv1 "github.com/openshift/api/osin/v1"
 	oauthclient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	bootstrap "github.com/openshift/library-go/pkg/authentication/bootstrapauthenticator"
+	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/oauth/oauthdiscovery"
 	"github.com/openshift/library-go/pkg/oauth/oauthserviceaccountclient"
 	"github.com/openshift/library-go/pkg/security/ldapclient"
 	"github.com/openshift/library-go/pkg/security/ldaputil"
+	"github.com/openshift/library-go/pkg/transport"
+
 	oauthserver "github.com/openshift/oauth-server/pkg"
 	"github.com/openshift/oauth-server/pkg/api"
 	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
@@ -58,6 +62,7 @@ import (
 	"github.com/openshift/oauth-server/pkg/oauth/registry"
 	"github.com/openshift/oauth-server/pkg/osinserver"
 	"github.com/openshift/oauth-server/pkg/osinserver/registrystorage"
+	metrics "github.com/openshift/oauth-server/pkg/prometheus"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
 	"github.com/openshift/oauth-server/pkg/server/errorpage"
 	"github.com/openshift/oauth-server/pkg/server/grant"
@@ -435,7 +440,7 @@ func (c *OAuthServerConfig) getAuthenticationHandler(mux oauthserver.Mux, errorH
 func (c *OAuthServerConfig) getOAuthProvider(identityProvider osinv1.IdentityProvider) (external.Provider, error) {
 	switch provider := identityProvider.Provider.Object.(type) {
 	case *osinv1.GitHubIdentityProvider:
-		transport, err := transportFor(provider.CA, "", "")
+		transport, err := transportFor(provider.CA, "", "", configv1.IdentityProviderTypeGitHub)
 		if err != nil {
 			return nil, err
 		}
@@ -446,7 +451,7 @@ func (c *OAuthServerConfig) getOAuthProvider(identityProvider osinv1.IdentityPro
 		return github.NewProvider(identityProvider.Name, provider.ClientID, clientSecret, provider.Hostname, transport, provider.Organizations, provider.Teams), nil
 
 	case *osinv1.GitLabIdentityProvider:
-		transport, err := transportFor(provider.CA, "", "")
+		transport, err := transportFor(provider.CA, "", "", configv1.IdentityProviderTypeGitLab)
 		if err != nil {
 			return nil, err
 		}
@@ -457,7 +462,7 @@ func (c *OAuthServerConfig) getOAuthProvider(identityProvider osinv1.IdentityPro
 		return gitlab.NewProvider(identityProvider.Name, provider.URL, provider.ClientID, clientSecret, transport, provider.Legacy)
 
 	case *osinv1.GoogleIdentityProvider:
-		transport, err := transportFor("", "", "")
+		transport, err := transportFor("", "", "", configv1.IdentityProviderTypeGoogle)
 		if err != nil {
 			return nil, err
 		}
@@ -468,7 +473,7 @@ func (c *OAuthServerConfig) getOAuthProvider(identityProvider osinv1.IdentityPro
 		return google.NewProvider(identityProvider.Name, provider.ClientID, clientSecret, provider.HostedDomain, transport)
 
 	case *osinv1.OpenIDIdentityProvider:
-		transport, err := transportFor(provider.CA, "", "")
+		transport, err := transportFor(provider.CA, "", "", configv1.IdentityProviderTypeOpenID)
 		if err != nil {
 			return nil, err
 		}
@@ -531,11 +536,20 @@ func (c *OAuthServerConfig) getPasswordAuthenticator(identityProvider osinv1.Ide
 		if err != nil {
 			return nil, err
 		}
-		clientConfig, err := ldapclient.NewLDAPClientConfig(provider.URL,
+
+		clientConfig, err := ldapclient.NewLDAPClientConfigWithTLSConnectionVerification(provider.URL,
 			provider.BindDN,
 			bindPassword,
 			provider.CA,
-			provider.Insecure)
+			provider.Insecure,
+			func(state tls.ConnectionState) error {
+				// The first element is the leaf certificate.
+				if len(state.PeerCertificates) > 0 && !crypto.CertHasSAN(state.PeerCertificates[0]) {
+					metrics.X509MissingSANCounter.WithLabelValues(string(configv1.IdentityProviderTypeLDAP)).Inc()
+				}
+				return nil
+			},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -563,7 +577,7 @@ func (c *OAuthServerConfig) getPasswordAuthenticator(identityProvider osinv1.Ide
 		if len(connectionInfo.URL) == 0 {
 			return nil, fmt.Errorf("URL is required for BasicAuthPasswordIdentityProvider")
 		}
-		transport, err := transportFor(connectionInfo.CA, connectionInfo.CertInfo.CertFile, connectionInfo.CertInfo.KeyFile)
+		transport, err := transportFor(connectionInfo.CA, connectionInfo.CertInfo.CertFile, connectionInfo.CertInfo.KeyFile, configv1.IdentityProviderTypeBasicAuth)
 		if err != nil {
 			return nil, fmt.Errorf("Error building BasicAuthPasswordIdentityProvider client: %v", err)
 		}
@@ -574,7 +588,7 @@ func (c *OAuthServerConfig) getPasswordAuthenticator(identityProvider osinv1.Ide
 		if len(connectionInfo.URL) == 0 {
 			return nil, fmt.Errorf("URL is required for KeystonePasswordIdentityProvider")
 		}
-		transport, err := transportFor(connectionInfo.CA, connectionInfo.CertInfo.CertFile, connectionInfo.CertInfo.KeyFile)
+		transport, err := transportFor(connectionInfo.CA, connectionInfo.CertInfo.CertFile, connectionInfo.CertInfo.KeyFile, configv1.IdentityProviderTypeKeystone)
 		if err != nil {
 			return nil, fmt.Errorf("Error building KeystonePasswordIdentityProvider client: %v", err)
 		}
@@ -688,12 +702,14 @@ func (redirectSuccessHandler) AuthenticationSucceeded(user kuser.Info, then stri
 }
 
 // transportFor returns an http.Transport for the given ca and client cert (which may be empty strings)
-func transportFor(ca, certFile, keyFile string) (http.RoundTripper, error) {
-	transport, err := transportForInner(ca, certFile, keyFile)
+func transportFor(ca, certFile, keyFile string, provider configv1.IdentityProviderType) (http.RoundTripper, error) {
+	t, err := transportForInner(ca, certFile, keyFile)
 	if err != nil {
 		return nil, err
 	}
-	return ktransport.DebugWrappers(transport), nil
+	t = transport.NewMissingSANRoundTripper(t, metrics.X509MissingSANCounter.WithLabelValues(string(provider)))
+	t = ktransport.DebugWrappers(t)
+	return t, nil
 }
 
 func transportForInner(ca, certFile, keyFile string) (http.RoundTripper, error) {
