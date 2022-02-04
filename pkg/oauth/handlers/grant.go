@@ -167,7 +167,11 @@ func (g *redirectGrant) GrantNeeded(user user.Info, grant *api.Grant, w http.Res
 	//           submits grant approval form, gets redirected to 'then' URL
 	//        <- Location: ../authorize?...
 	//   User -> https://auth.example.com/foo/oauth/authorize?...
-	reqURL := &(*req.URL)
+	reqURL, err := url.Parse(req.URL.String())
+	if err != nil {
+		return false, false, err
+	}
+
 	reqURL.Host = ""
 	reqURL.Scheme = ""
 	reqURL.Path = path.Join("..", lastSegment)
@@ -184,6 +188,7 @@ func (g *redirectGrant) GrantNeeded(user user.Info, grant *api.Grant, w http.Res
 	}
 	w.Header().Set("Location", redirectURL.String())
 	w.WriteHeader(http.StatusFound)
+
 	return false, true, nil
 }
 

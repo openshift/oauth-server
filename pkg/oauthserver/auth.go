@@ -80,7 +80,6 @@ const (
 	openShiftApproveSubpath      = "approve"
 	openShiftOAuthCallbackPrefix = "/oauth2callback"
 	openShiftBrowserClientID     = "openshift-browser-client"
-	openShiftCLIClientID         = "openshift-challenging-client"
 )
 
 // WithOAuth decorates the given handler by serving the OAuth2 endpoints while

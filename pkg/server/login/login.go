@@ -3,7 +3,6 @@ package login
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -190,7 +189,17 @@ func (l *Login) handleLogin(w http.ResponseWriter, req *http.Request) {
 
 	audit.AddDecisionAnnotation(req, audit.AllowDecision)
 	klog.V(4).Infof(`Login with provider %q succeeded for %q: %#v`, l.provider, username, authResponse.User)
-	l.auth.AuthenticationSucceeded(authResponse.User, then, w, req)
+	_, err = l.auth.AuthenticationSucceeded(authResponse.User, then, w, req)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf(
+			`Error succeeding authentication for %q with provider %q: %v`,
+			username, l.provider, err,
+		))
+		failed(errorpage.AuthenticationErrorCode(err), w, req)
+		metrics.RecordFormPasswordAuth(metrics.ErrorResult)
+		return
+	}
+
 	metrics.RecordFormPasswordAuth(metrics.SuccessResult)
 }
 
@@ -257,7 +266,7 @@ func ValidateLoginTemplate(templateContent []byte) []error {
 
 	for field, value := range testFields {
 		if !bytes.Contains(output, []byte(value)) {
-			allErrs = append(allErrs, errors.New(fmt.Sprintf("template is missing parameter {{ .%s }}", field)))
+			allErrs = append(allErrs, fmt.Errorf("template is missing parameter {{ .%s }}", field))
 		}
 	}
 

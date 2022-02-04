@@ -37,25 +37,33 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	command := NewOpenshiftIntegratedOAuthServerCommand(stopCh)
+	command, err := NewOpenshiftIntegratedOAuthServerCommand(stopCh)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(2)
+	}
 	if err := command.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 }
 
-func NewOpenshiftIntegratedOAuthServerCommand(stopCh <-chan struct{}) *cobra.Command {
+func NewOpenshiftIntegratedOAuthServerCommand(stopCh <-chan struct{}) (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:   "oauth-server",
 		Short: "Command for the OpenShift integrated OAuth server",
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
+			_ = cmd.Help()
 			os.Exit(1)
 		},
 	}
 
-	startOsin := openshift_integrated_oauth_server.NewOsinServerCommand(os.Stdout, os.Stderr, stopCh)
+	startOsin, err := openshift_integrated_oauth_server.NewOsinServerCommand(os.Stdout, os.Stderr, stopCh)
+	if err != nil {
+		return nil, err
+	}
+
 	cmd.AddCommand(startOsin)
 
-	return cmd
+	return cmd, nil
 }

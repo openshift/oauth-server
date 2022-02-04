@@ -55,6 +55,6 @@ NextRequested:
 func sortAndCopy(arr []string) []string {
 	newArr := make([]string, len(arr))
 	copy(newArr, arr)
-	sort.Sort(sort.StringSlice(newArr))
+	sort.Strings(newArr)
 	return newArr
 }

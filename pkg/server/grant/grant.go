@@ -195,7 +195,12 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	req.ParseForm()
+	if err := req.ParseForm(); err != nil {
+		klog.V(4).Infof("parse form: %v", err)
+		l.failed("invalid form", w, req)
+		return
+	}
+
 	then := req.PostFormValue(thenParam)
 	scopes := scopecovers.Join(req.PostForm[scopeParam])
 	username := req.PostFormValue(userNameParam)
@@ -295,7 +300,7 @@ func (l *Grant) redirect(reason string, w http.ResponseWriter, req *http.Request
 func getScopeData(scopeName string, grantedScopeNames []string) Scope {
 	scopeData := Scope{
 		Name:    scopeName,
-		Error:   fmt.Sprintf("Unknown scope"),
+		Error:   "Unknown scope",
 		Granted: scopecovers.Covers(grantedScopeNames, []string{scopeName}),
 	}
 	for _, evaluator := range scopemetadata.ScopeDescribers {

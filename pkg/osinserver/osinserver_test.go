@@ -1,6 +1,7 @@
 package osinserver
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -47,7 +48,7 @@ func TestClientCredentialFlow(t *testing.T) {
 		},
 	}
 
-	token, err := config.PasswordCredentialsToken(oauth2.NoContext, config.ClientID, config.ClientSecret)
+	token, err := config.PasswordCredentialsToken(context.TODO(), config.ClientID, config.ClientSecret)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

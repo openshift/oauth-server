@@ -86,9 +86,9 @@ func TestUserGroupsMapper_UserFor(t *testing.T) {
 			fakeGroupsClient := fakeuserclient.NewSimpleClientset(groupObjs...)
 
 			userInformer := userinformer.NewSharedInformerFactory(fakeGroupsClient, 5*time.Second)
-			userInformer.User().V1().Groups().Informer().AddIndexers(cache.Indexers{
+			require.NoError(t, userInformer.User().V1().Groups().Informer().AddIndexers(cache.Indexers{
 				usercache.ByUserIndexName: usercache.ByUserIndexKeys,
-			})
+			}))
 			testCtx, cancelCtx := context.WithCancel(context.Background())
 			go userInformer.Start(testCtx.Done())
 			defer cancelCtx()
