@@ -40,6 +40,7 @@ import (
 
 	oauthserver "github.com/openshift/oauth-server/pkg"
 	"github.com/openshift/oauth-server/pkg/api"
+	"github.com/openshift/oauth-server/pkg/audit"
 	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/authenticator/challenger/passwordchallenger"
 	"github.com/openshift/oauth-server/pkg/authenticator/challenger/placeholderchallenger"
@@ -113,7 +114,13 @@ func (c *OAuthServerConfig) WithOAuth(handler http.Handler) (http.Handler, error
 	if timeout := c.ExtraOAuthConfig.Options.TokenConfig.AccessTokenInactivityTimeout; timeout != nil {
 		tokentimeout = int32(timeout.Seconds())
 	}
-	storage := registrystorage.New(c.ExtraOAuthConfig.OAuthAccessTokenClient, c.ExtraOAuthConfig.OAuthAuthorizeTokenClient, combinedOAuthClientGetter, c.ExtraOAuthConfig.TokenReviewClient, tokentimeout)
+	storage := registrystorage.New(
+		c.ExtraOAuthConfig.OAuthAccessTokenClient,
+		c.ExtraOAuthConfig.OAuthAuthorizeTokenClient,
+		combinedOAuthClientGetter,
+		c.ExtraOAuthConfig.TokenReviewClient,
+		tokentimeout,
+	)
 	config := osinserver.NewDefaultServerConfig()
 	if authorizationExpiration := c.ExtraOAuthConfig.Options.TokenConfig.AuthorizeTokenMaxAgeSeconds; authorizationExpiration > 0 {
 		config.AuthorizationExpiration = authorizationExpiration
@@ -229,7 +236,7 @@ func (c *OAuthServerConfig) getCSRF() csrf.CSRF {
 }
 
 func (c *OAuthServerConfig) getAuthorizeAuthenticationHandlers(mux oauthserver.Mux, errorHandler handlers.AuthenticationErrorHandler) (authenticator.Request, handlers.AuthenticationHandler, osinserver.AuthorizeHandler, error) {
-	authRequestHandler, err := c.getAuthenticationRequestHandler()
+	authRequestHandler, err := c.getAuthenticationRequestHandlerWithAudit()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -610,6 +617,17 @@ func (c *OAuthServerConfig) getPasswordAuthenticator(identityProvider osinv1.Ide
 		return nil, fmt.Errorf("No password auth found that matches %v.  The OAuth server cannot start!", identityProvider)
 	}
 
+}
+
+// getAuthenticationRequestHandlerWithAudit wraps getAuthenticationRequestHandler's
+// authenticator.Request with audit logging with regartds to the final decision.
+func (c *OAuthServerConfig) getAuthenticationRequestHandlerWithAudit() (authenticator.Request, error) {
+	authReq, err := c.getAuthenticationRequestHandler()
+	if err != nil {
+		return authReq, err
+	}
+
+	return audit.AuthenticatorRequestWithAuditDecision(authReq), nil
 }
 
 func (c *OAuthServerConfig) getAuthenticationRequestHandler() (authenticator.Request, error) {

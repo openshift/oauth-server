@@ -8,23 +8,30 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apiserver/pkg/server/options"
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
 	osinv1 "github.com/openshift/api/osin/v1"
 	"github.com/openshift/library-go/pkg/serviceability"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
+	"github.com/openshift/oauth-server/pkg/audit"
 )
 
-type OsinServer struct {
+type OsinServerOptions struct {
 	ConfigFile string
+	Audit      *options.AuditOptions
 }
 
-func NewOsinServer(out, errout io.Writer, stopCh <-chan struct{}) *cobra.Command {
-	options := &OsinServer{}
+func NewOsinServerCommand(out, errout io.Writer, stopCh <-chan struct{}) *cobra.Command {
+	options := &OsinServerOptions{
+		Audit: options.NewAuditOptions(),
+	}
 
 	cmd := &cobra.Command{
 		Use:   "osinserver",
@@ -51,8 +58,10 @@ func NewOsinServer(out, errout io.Writer, stopCh <-chan struct{}) *cobra.Command
 		},
 	}
 
+	// Handle Flags
 	flags := cmd.Flags()
-	// This command only supports reading from config
+	options.Audit.AddFlags(flags)
+
 	flags.StringVar(&options.ConfigFile, "config", "", "Location of the osin configuration file to run from.")
 	cmd.MarkFlagFilename("config", "yaml", "yml")
 	cmd.MarkFlagRequired("config")
@@ -60,15 +69,19 @@ func NewOsinServer(out, errout io.Writer, stopCh <-chan struct{}) *cobra.Command
 	return cmd
 }
 
-func (o *OsinServer) Validate() error {
+func (o *OsinServerOptions) Validate() error {
 	if len(o.ConfigFile) == 0 {
 		return errors.New("--config is required for this command")
+	}
+
+	if o.Audit != nil && o.Audit.PolicyFile != "" {
+		return audit.Validate(o.Audit.PolicyFile)
 	}
 
 	return nil
 }
 
-func (o *OsinServer) RunOsinServer(stopCh <-chan struct{}) error {
+func (o *OsinServerOptions) RunOsinServer(stopCh <-chan struct{}) error {
 	configContent, err := ioutil.ReadFile(o.ConfigFile)
 	if err != nil {
 		return err
@@ -88,5 +101,5 @@ func (o *OsinServer) RunOsinServer(stopCh <-chan struct{}) error {
 		return fmt.Errorf("expected OsinServerConfig, got %T", config)
 	}
 
-	return RunOsinServer(config, stopCh)
+	return RunOsinServer(config, o.Audit, stopCh)
 }

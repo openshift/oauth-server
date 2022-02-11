@@ -13,6 +13,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	oauthserver "github.com/openshift/oauth-server/pkg"
+	"github.com/openshift/oauth-server/pkg/audit"
 	"github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
 	metrics "github.com/openshift/oauth-server/pkg/prometheus"
@@ -152,11 +153,13 @@ func (l *Login) handleLogin(w http.ResponseWriter, req *http.Request) {
 		failed(errorCodeTokenExpired, w, req)
 		return
 	}
+
 	then := req.FormValue(thenParam)
 	if !redirect.IsServerRelativeURL(then) {
 		http.Redirect(w, req, "/", http.StatusFound)
 		return
 	}
+
 	username, password := req.FormValue(usernameParam), req.FormValue(passwordParam)
 	if len(username) == 0 {
 		failed(errorCodeUserRequired, w, req)
@@ -166,25 +169,29 @@ func (l *Login) handleLogin(w http.ResponseWriter, req *http.Request) {
 		failed(errorCodeAccessDenied, w, req)
 		return
 	}
-	result := metrics.SuccessResult
-	defer func() {
-		metrics.RecordFormPasswordAuth(result)
-	}()
+
+	audit.AddUsernameAnnotation(req, username)
+
 	authResponse, ok, err := l.auth.AuthenticatePassword(context.TODO(), username, password)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf(`Error authenticating %q with provider %q: %v`, username, l.provider, err))
 		failed(errorpage.AuthenticationErrorCode(err), w, req)
-		result = metrics.ErrorResult
+		audit.AddDecisionAnnotation(req, audit.ErrorDecision)
+		metrics.RecordFormPasswordAuth(metrics.ErrorResult)
 		return
 	}
 	if !ok {
 		klog.V(4).Infof(`Login with provider %q failed for %q`, l.provider, username)
 		failed(errorCodeAccessDenied, w, req)
-		result = metrics.FailResult
+		audit.AddDecisionAnnotation(req, audit.DenyDecision)
+		metrics.RecordFormPasswordAuth(metrics.FailResult)
 		return
 	}
+
+	audit.AddDecisionAnnotation(req, audit.AllowDecision)
 	klog.V(4).Infof(`Login with provider %q succeeded for %q: %#v`, l.provider, username, authResponse.User)
 	l.auth.AuthenticationSucceeded(authResponse.User, then, w, req)
+	metrics.RecordFormPasswordAuth(metrics.SuccessResult)
 }
 
 // NewLoginFormRenderer creates a login form renderer that takes in an optional custom template to

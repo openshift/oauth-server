@@ -283,7 +283,13 @@ func TestRegistryAndServer(t *testing.T) {
 		}
 		fakeOAuthClient := oauthfake.NewSimpleClientset(objs...)
 		fakeTokenReviewClient := kubefake.NewSimpleClientset()
-		storage := registrystorage.New(fakeOAuthClient.OauthV1().OAuthAccessTokens(), fakeOAuthClient.OauthV1().OAuthAuthorizeTokens(), fakeOAuthClient.OauthV1().OAuthClients(), fakeTokenReviewClient.AuthenticationV1().TokenReviews(), 0)
+		storage := registrystorage.New(
+			fakeOAuthClient.OauthV1().OAuthAccessTokens(),
+			fakeOAuthClient.OauthV1().OAuthAuthorizeTokens(),
+			fakeOAuthClient.OauthV1().OAuthClients(),
+			fakeTokenReviewClient.AuthenticationV1().TokenReviews(),
+			0,
+		)
 		config := osinserver.NewDefaultServerConfig()
 
 		h.AuthorizeHandler = osinserver.AuthorizeHandlers{

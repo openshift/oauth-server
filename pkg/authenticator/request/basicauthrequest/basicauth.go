@@ -9,6 +9,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/oauth-server/pkg/audit"
 	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	metrics "github.com/openshift/oauth-server/pkg/prometheus"
 )
@@ -32,26 +33,25 @@ func (authHandler *basicAuthRequestHandler) AuthenticateRequest(req *http.Reques
 		return nil, false, nil
 	}
 
-	result := metrics.SuccessResult
-	defer func() {
-		metrics.RecordBasicPasswordAuth(result)
-	}()
-
 	authResponse, ok, err := authHandler.passwordAuthenticator.AuthenticatePassword(req.Context(), username, password)
 	if ok && authHandler.removeHeader {
 		req.Header.Del("Authorization")
 	}
 
+	audit.AddUsernameAnnotation(req, username)
+
 	switch {
 	case err != nil:
 		klog.Errorf(`Error authenticating login %q with provider %q: %v`, username, authHandler.provider, err)
-		result = metrics.ErrorResult
+		metrics.RecordBasicPasswordAuth(metrics.ErrorResult)
 	case !ok:
 		klog.V(4).Infof(`Login with provider %q failed for login %q`, authHandler.provider, username)
-		result = metrics.FailResult
+		metrics.RecordBasicPasswordAuth(metrics.FailResult)
 	case ok:
 		klog.V(4).Infof(`Login with provider %q succeeded for login %q: %#v`, authHandler.provider, username, authResponse.User)
+		metrics.RecordBasicPasswordAuth(metrics.SuccessResult)
 	}
+
 	return authResponse, ok, err
 }
 
