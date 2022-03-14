@@ -62,5 +62,6 @@ func (l *logout) isValidRedirect(then string) bool {
 		return true
 	}
 
-	return osin.ValidateUri(l.redirect, then) == nil
+	_, err := osin.ValidateUri(l.redirect, then)
+	return err == nil
 }
