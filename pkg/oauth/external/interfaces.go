@@ -4,8 +4,8 @@ package external
 import (
 	"net/http"
 
-	"github.com/RangelReale/osincli"
 	authapi "github.com/openshift/oauth-server/pkg/api"
+	"github.com/openshift/osincli"
 )
 
 // Provider encapsulates the URLs, configuration, any custom authorize request parameters, and

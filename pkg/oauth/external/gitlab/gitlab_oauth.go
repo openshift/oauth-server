@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/RangelReale/osincli"
+	"github.com/openshift/osincli"
 	"k8s.io/klog/v2"
 
 	authapi "github.com/openshift/oauth-server/pkg/api"

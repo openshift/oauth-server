@@ -3,7 +3,6 @@ module github.com/openshift/oauth-server
 go 1.17
 
 require (
-	github.com/RangelReale/osincli v0.0.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gophercloud/gophercloud v0.24.0
 	github.com/gorilla/sessions v1.2.1
@@ -12,6 +11,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20210916133943-9acee1a0fb83
 	github.com/openshift/library-go v0.0.0-20211013122800-874db8a3dac9
 	github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
+	github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.1

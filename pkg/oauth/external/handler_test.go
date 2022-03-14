@@ -6,10 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/RangelReale/osincli"
+	"github.com/openshift/osincli"
+	"k8s.io/apiserver/pkg/authentication/user"
+
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
-	"k8s.io/apiserver/pkg/authentication/user"
 )
 
 func TestHandler(t *testing.T) {
