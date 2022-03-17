@@ -12,6 +12,7 @@ import (
 	"github.com/RangelReale/osincli"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/oauth-server/pkg/api"
 	authapi "github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/oauth/external"
 	"github.com/openshift/oauth-server/pkg/oauth/external/github/links"
@@ -169,36 +170,13 @@ func (p provider) AddCustomParameters(req *osincli.AuthorizeRequest) {
 }
 
 // GetUserIdentity implements external/interfaces/Provider.GetUserIdentity
-func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentityInfo, bool, error) {
+func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentityInfo, error) {
 	userdata := githubUser{}
 	if _, err := p.getJSON(p.githubUserApiURL, data.AccessToken, &userdata); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	if userdata.ID == 0 {
-		return nil, false, errors.New("Could not retrieve GitHub id")
-	}
-
-	if len(p.allowedOrganizations) > 0 {
-		userOrgs, err := p.getUserOrgs(data.AccessToken)
-		if err != nil {
-			return nil, false, err
-		}
-
-		if !userOrgs.HasAny(p.allowedOrganizations.List()...) {
-			return nil, false, fmt.Errorf("User %s is not a member of any allowed organizations %v (user is a member of %v)", userdata.Login, p.allowedOrganizations.List(), userOrgs.List())
-		}
-		klog.V(4).Infof("User %s is a member of organizations %v)", userdata.Login, userOrgs.List())
-	}
-	if len(p.allowedTeams) > 0 {
-		userTeams, err := p.getUserTeams(data.AccessToken)
-		if err != nil {
-			return nil, false, err
-		}
-
-		if !userTeams.HasAny(p.allowedTeams.List()...) {
-			return nil, false, fmt.Errorf("User %s is not a member of any allowed teams %v (user is a member of %v)", userdata.Login, p.allowedTeams.List(), userTeams.List())
-		}
-		klog.V(4).Infof("User %s is a member of teams %v)", userdata.Login, userTeams.List())
+		return nil, errors.New("Could not retrieve GitHub id")
 	}
 
 	// The returned email is empty if the user has not specified a public email address in their profile
@@ -223,7 +201,31 @@ func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdenti
 	}
 	klog.V(4).Infof("Got identity=%#v", identity)
 
-	return identity, true, nil
+	// Apply authorization rules
+	if len(p.allowedOrganizations) > 0 {
+		userOrgs, err := p.getUserOrgs(data.AccessToken)
+		if err != nil {
+			return nil, api.NewAuthorizationFailedError(identity, err)
+		}
+
+		if !userOrgs.HasAny(p.allowedOrganizations.List()...) {
+			return nil, api.NewAuthorizationDeniedError(identity, fmt.Errorf("User %s is not a member of any allowed organizations %v (user is a member of %v)", userdata.Login, p.allowedOrganizations.List(), userOrgs.List()))
+		}
+		klog.V(4).Infof("User %s is a member of organizations %v)", userdata.Login, userOrgs.List())
+	}
+	if len(p.allowedTeams) > 0 {
+		userTeams, err := p.getUserTeams(data.AccessToken)
+		if err != nil {
+			return nil, api.NewAuthorizationFailedError(identity, err)
+		}
+
+		if !userTeams.HasAny(p.allowedTeams.List()...) {
+			return nil, api.NewAuthorizationDeniedError(identity, fmt.Errorf("User %s is not a member of any allowed teams %v (user is a member of %v)", userdata.Login, p.allowedTeams.List(), userTeams.List()))
+		}
+		klog.V(4).Infof("User %s is a member of teams %v)", userdata.Login, userTeams.List())
+	}
+
+	return identity, nil
 }
 
 // getUserOrgs retrieves the organization membership for the user with the given access token.
