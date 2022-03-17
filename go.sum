@@ -477,6 +477,7 @@ github.com/openshift/api v0.0.0-20210915110300-3cd8091317c4/go.mod h1:RsQCVJu4qh
 github.com/openshift/api v0.0.0-20210924154557-a4f696157341/go.mod h1:RsQCVJu4qhUawxxDP7pGlwU3IA4F01wYm3qKEu29Su8=
 github.com/openshift/api v0.0.0-20211012185411-2e1b88be96db h1:xAZHXBEs15bPeZYestU2KtrDG8iElXjeFoVRjc5xlMA=
 github.com/openshift/api v0.0.0-20211012185411-2e1b88be96db/go.mod h1:RsQCVJu4qhUawxxDP7pGlwU3IA4F01wYm3qKEu29Su8=
+github.com/openshift/build-machinery-go v0.0.0-20200917070002-f171684f77ab/go.mod h1:b1BuldmJlbA/xYtdZvKi+7j5YGB44qJUJDZ9zwiNCfE=
 github.com/openshift/build-machinery-go v0.0.0-20210712174854-1bb7fd1518d3/go.mod h1:b1BuldmJlbA/xYtdZvKi+7j5YGB44qJUJDZ9zwiNCfE=
 github.com/openshift/build-machinery-go v0.0.0-20210806203541-4ea9b6da3a37 h1:40Nw4fwP1tXx0g1UgIGoLA9eoSdLm7jBUXFH5uVYjBA=
 github.com/openshift/build-machinery-go v0.0.0-20210806203541-4ea9b6da3a37/go.mod h1:b1BuldmJlbA/xYtdZvKi+7j5YGB44qJUJDZ9zwiNCfE=
@@ -486,8 +487,8 @@ github.com/openshift/kubernetes-apiserver v0.0.0-20210917123024-dee997b70b07 h1:
 github.com/openshift/kubernetes-apiserver v0.0.0-20210917123024-dee997b70b07/go.mod h1:vrpMmbyjWrgdyOvZTSpsusQq5iigKNWv9o9KlDAbBHI=
 github.com/openshift/library-go v0.0.0-20211013122800-874db8a3dac9 h1:ooI4o6nZW1jYLobhkNagiXaLb1SnpyA32zYi40+APps=
 github.com/openshift/library-go v0.0.0-20211013122800-874db8a3dac9/go.mod h1:b1cKE6TuNqjl7wT0y3W4g0qREuab1mH6WOJm9pT8L/A=
-github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769 h1:jTaxjdXcD89WEuNXU/R+ByAMhcI3ETa6Y/o4V9v0s9Q=
-github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769/go.mod h1:/gGuqQHvGNST0GB+Pomi3398FTdcM+9UaXafpqHvfDM=
+github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f h1:4da9vH8eDlJo58703cADj3FlsdnFRgsnfuwj/4lYXfY=
+github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f/go.mod h1:DoYehsADYGKlXTIvqyZVnopfJbWgT6UsQYf8ETt1vjw=
 github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2 h1:9oADVMmPa4G60MQtoSjD26aD/vZreqbIAfiUiO220eY=
 github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2/go.mod h1:Riv9DbfKiX3y9ebcS4PHU4zLhVXu971+4jCVwKIue5M=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
@@ -1049,6 +1050,7 @@ gopkg.in/ldap.v2 v2.5.1/go.mod h1:oI0cpe/D7HRtBQl8aTg+ZmzFUAvu4lsv3eLXMLGFxWk=
 gopkg.in/natefinch/lumberjack.v2 v2.0.0 h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=
 gopkg.in/natefinch/lumberjack.v2 v2.0.0/go.mod h1:l0ndWWf7gzL7RNwBG7wST/UCcT4T24xpD6X8LsfU/+k=
 gopkg.in/resty.v1 v1.12.0/go.mod h1:mDo4pnntr5jdWRML875a/NmxYqAlA73dVijT2AXvQQo=
+gopkg.in/square/go-jose.v1 v1.1.2/go.mod h1:QpYS+a4WhS+DTlyQIi6Ka7MS3SuR9a055rgXNEe6EiA=
 gopkg.in/square/go-jose.v2 v2.2.2/go.mod h1:M9dMgbHiYLoDGQrXy7OpJDJWiKiU//h+vD76mk0e1AI=
 gopkg.in/square/go-jose.v2 v2.6.0 h1:NGk74WTnPKBNUhNzQX7PYcTLUjoq7mzKk2OKbvwk2iI=
 gopkg.in/square/go-jose.v2 v2.6.0/go.mod h1:M9dMgbHiYLoDGQrXy7OpJDJWiKiU//h+vD76mk0e1AI=
