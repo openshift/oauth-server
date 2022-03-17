@@ -15,6 +15,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 
 	authapi "github.com/openshift/oauth-server/pkg/api"
+	"github.com/openshift/oauth-server/pkg/audit"
 	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/authenticator/identitymapper"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
@@ -128,14 +129,9 @@ func (h *Handler) AuthenticatePassword(ctx context.Context, username, password s
 
 	klog.V(5).Infof("Got access data for %s", username)
 
-	identity, ok, err := h.provider.GetUserIdentity(accessData)
+	identity, err := h.provider.GetUserIdentity(accessData)
 	if err != nil {
 		klog.V(4).Infof("Error getting userIdentityInfo info: %v", err)
-		return nil, false, err
-	}
-	if !ok {
-		klog.V(4).Infof("Could not get userIdentityInfo info from access token")
-		err := errors.New("Could not get userIdentityInfo info from access token")
 		return nil, false, err
 	}
 
@@ -180,19 +176,29 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	klog.V(5).Infof("Got access data")
+	h.login(w, req, accessData, authData.State)
+}
 
-	identity, ok, err := h.provider.GetUserIdentity(accessData)
+func (h *Handler) login(w http.ResponseWriter, req *http.Request, accessData *osincli.AccessData, state string) {
+	identity, err := h.provider.GetUserIdentity(accessData)
+	if identity != nil {
+		audit.AddUsernameAnnotation(req, identity.GetIdentityName())
+	}
 	if err != nil {
-		klog.V(4).Infof("Error getting userIdentityInfo info: %v", err)
-		h.handleError(err, w, req)
-		return
+		var authorizationError AuthorizationError
+		if errors.As(err, &authorizationError) {
+			klog.V(4).Infof("Authorization error: %v", authorizationError.AuthorizationDenialReason())
+			audit.AddDecisionAnnotation(req, audit.DenyDecision)
+			h.handleError(err, w, req)
+			return
+		} else {
+			klog.V(4).Infof("Error getting userIdentityInfo info: %v", err)
+			audit.AddDecisionAnnotation(req, audit.ErrorDecision)
+			h.handleError(err, w, req)
+			return
+		}
 	}
-	if !ok {
-		klog.V(4).Infof("Could not get userIdentityInfo info from access token")
-		err := errors.New("Could not get userIdentityInfo info from access token")
-		h.handleError(err, w, req)
-		return
-	}
+	audit.AddDecisionAnnotation(req, audit.AllowDecision)
 
 	user, err := h.mapper.UserFor(identity)
 	if err != nil {
@@ -202,7 +208,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	klog.V(4).Infof("Got userIdentityMapping: %#v", user)
 
-	_, err = h.success.AuthenticationSucceeded(user, authData.State, w, req)
+	_, err = h.success.AuthenticationSucceeded(user, state, w, req)
 	if err != nil {
 		klog.V(4).Infof("Error calling success handler: %v", err)
 		h.handleError(err, w, req)

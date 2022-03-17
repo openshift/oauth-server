@@ -132,23 +132,23 @@ func (p provider) AddCustomParameters(req *osincli.AuthorizeRequest) {
 }
 
 // GetUserIdentity implements external/interfaces/Provider.GetUserIdentity
-func (p provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentityInfo, bool, error) {
+func (p provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentityInfo, error) {
 	// Token response MUST include id_token
 	// http://openid.net/specs/openid-connect-core-1_0.html#TokenResponse
 	idToken, ok := getClaimValue(data.ResponseData, "id_token")
 	if !ok {
-		return nil, false, fmt.Errorf("no id_token returned in %#v", data.ResponseData)
+		return nil, fmt.Errorf("no id_token returned in %#v", data.ResponseData)
 	}
 
 	// id_token MUST be a valid JWT
 	idTokenClaims, err := decodeJWT(idToken)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	if p.IDTokenValidator != nil {
 		if err := p.IDTokenValidator(idTokenClaims); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 	}
 
@@ -159,7 +159,7 @@ func (p provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentit
 	// http://openid.net/specs/openid-connect-core-1_0.html#IDToken
 	idTokenSubject, ok := getClaimValue(idTokenClaims, subjectClaim)
 	if !ok {
-		return nil, false, fmt.Errorf("id_token did not contain a 'sub' claim: %#v", idTokenClaims)
+		return nil, fmt.Errorf("id_token did not contain a 'sub' claim: %#v", idTokenClaims)
 	}
 
 	// Use id_token claims by default
@@ -169,21 +169,21 @@ func (p provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentit
 	if len(p.UserInfoURL) != 0 {
 		userInfoClaims, err := fetchUserInfo(p.UserInfoURL, data.AccessToken, p.transport)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 
 		// The sub (subject) Claim MUST always be returned in the UserInfo Response.
 		// http://openid.net/specs/openid-connect-core-1_0.html#UserInfoResponse
 		userInfoSubject, ok := getClaimValue(userInfoClaims, subjectClaim)
 		if !ok {
-			return nil, false, fmt.Errorf("userinfo response did not contain a 'sub' claim: %#v", userInfoClaims)
+			return nil, fmt.Errorf("userinfo response did not contain a 'sub' claim: %#v", userInfoClaims)
 		}
 
 		// The sub Claim in the UserInfo Response MUST be verified to exactly match the sub Claim in the ID Token;
 		// if they do not match, the UserInfo Response values MUST NOT be used.
 		// http://openid.net/specs/openid-connect-core-1_0.html#UserInfoResponse
 		if userInfoSubject != idTokenSubject {
-			return nil, false, fmt.Errorf("userinfo 'sub' claim (%s) did not match id_token 'sub' claim (%s)", userInfoSubject, idTokenSubject)
+			return nil, fmt.Errorf("userinfo 'sub' claim (%s) did not match id_token 'sub' claim (%s)", userInfoSubject, idTokenSubject)
 		}
 
 		// Merge in userinfo claims in case id_token claims contained some that userinfo did not
@@ -196,7 +196,7 @@ func (p provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentit
 
 	id, ok := getClaimValue(claims, p.IDClaims...)
 	if !ok {
-		return nil, false, fmt.Errorf("could not retrieve id claim for %#v from %#v", p.IDClaims, claims)
+		return nil, fmt.Errorf("could not retrieve id claim for %#v from %#v", p.IDClaims, claims)
 	}
 
 	identity := authapi.NewDefaultUserIdentityInfo(p.providerName, id)
@@ -219,7 +219,7 @@ func (p provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentit
 
 	klog.V(4).Infof("identity=%#v", identity)
 
-	return identity, true, nil
+	return identity, nil
 }
 
 func getClaimValue(data map[string]interface{}, claims ...string) (string, bool) {
