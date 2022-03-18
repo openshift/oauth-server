@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/RangelReale/osin"
+	"github.com/openshift/osin"
 )
 
 func TestAuthenticator(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/RangelReale/osin"
 	"github.com/RangelReale/osincli"
+	"github.com/openshift/osin"
 	"golang.org/x/oauth2"
 
 	"github.com/openshift/oauth-server/pkg/osinserver/teststorage"

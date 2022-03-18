@@ -3,7 +3,7 @@ package logout
 import (
 	"net/http"
 
-	"github.com/RangelReale/osin"
+	"github.com/openshift/osin"
 	"k8s.io/klog/v2"
 
 	"k8s.io/apiserver/pkg/authentication/user"

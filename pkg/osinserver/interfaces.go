@@ -3,7 +3,7 @@ package osinserver
 import (
 	"net/http"
 
-	"github.com/RangelReale/osin"
+	"github.com/openshift/osin"
 )
 
 // AuthorizeHandler populates an AuthorizeRequest or handles the request itself

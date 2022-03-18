@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/RangelReale/osin"
+	"github.com/openshift/osin"
 )
 
 func NewDefaultServerConfig() *osin.ServerConfig {

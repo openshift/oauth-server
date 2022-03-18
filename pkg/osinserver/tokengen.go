@@ -3,7 +3,7 @@ package osinserver
 import (
 	"strings"
 
-	"github.com/RangelReale/osin"
+	"github.com/openshift/osin"
 
 	"github.com/openshift/oauth-server/pkg/server/crypto"
 )
