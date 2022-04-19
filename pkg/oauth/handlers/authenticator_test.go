@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	kaudit "k8s.io/apiserver/pkg/audit"
 
 	"github.com/openshift/osin"
 )
@@ -22,9 +25,17 @@ func TestAuthenticator(t *testing.T) {
 	}
 
 	for requestType, testCase := range testCases {
-		req := &osin.AccessRequest{Type: requestType}
+		httpReq, err := http.NewRequest(http.MethodPost, "https://example.org", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		httpReq = httpReq.WithContext(kaudit.WithAuditAnnotations(httpReq.Context()))
+		req := &osin.AccessRequest{
+			Type:        requestType,
+			HttpRequest: httpReq,
+		}
 		w := httptest.NewRecorder()
-		err := NewDenyAccessAuthenticator().HandleAccess(req, w)
+		err = NewDenyAccessAuthenticator().HandleAccess(req, w)
 		if testCase.ExpectedError && err == nil {
 			t.Fatalf("%s: Expected error, got success", requestType)
 		}

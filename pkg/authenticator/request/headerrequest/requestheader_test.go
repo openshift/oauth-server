@@ -1,12 +1,19 @@
 package headerrequest
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
+	"time"
+
+	apiaudit "k8s.io/apiserver/pkg/apis/audit"
+	kaudit "k8s.io/apiserver/pkg/audit"
+	"k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/apiserver/pkg/authorization/authorizer"
 
 	"github.com/openshift/oauth-server/pkg/api"
-	"k8s.io/apiserver/pkg/authentication/user"
+	"github.com/openshift/oauth-server/pkg/audit"
 )
 
 type TestUserIdentityMapper struct {
@@ -95,7 +102,12 @@ func TestRequestHeader(t *testing.T) {
 	for k, testcase := range testcases {
 		mapper := &TestUserIdentityMapper{}
 		auth := NewAuthenticator("testprovider", &testcase.Config, mapper)
-		req := &http.Request{Header: testcase.RequestHeaders}
+		req, err := http.NewRequest(http.MethodGet, "http://example.org", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header = testcase.RequestHeaders
+		req = req.WithContext(kaudit.WithAuditAnnotations(req.Context()))
 
 		authResponse, ok, err := auth.AuthenticateRequest(req)
 		if testcase.ExpectedUsername == "" {
@@ -103,7 +115,11 @@ func TestRequestHeader(t *testing.T) {
 				t.Errorf("%s: Didn't expect user, authentication succeeded", k)
 				continue
 			}
+			if err := verifyAnnotations(t, req, testcase.ExpectedUsername); err == nil {
+				t.Errorf("Didn't expect username: %q", testcase.ExpectedUsername)
+			}
 		}
+
 		if testcase.ExpectedUsername != "" {
 			if err != nil {
 				t.Errorf("%s: Expected user, got error: %v", k, err)
@@ -117,7 +133,11 @@ func TestRequestHeader(t *testing.T) {
 				t.Errorf("%s: Expected username %s, got %s", k, testcase.ExpectedUsername, authResponse.User.GetName())
 				continue
 			}
+			if err := verifyAnnotations(t, req, testcase.ExpectedUsername); err != nil {
+				t.Error(err)
+			}
 		}
+
 		if testcase.ExpectedIdentity != nil {
 			if !reflect.DeepEqual(testcase.ExpectedIdentity.GetExtra(), mapper.Identity.GetExtra()) {
 				t.Errorf("%s: Expected %#v, got %#v", k, testcase.ExpectedIdentity.GetExtra(), mapper.Identity.GetExtra())
@@ -127,4 +147,31 @@ func TestRequestHeader(t *testing.T) {
 			}
 		}
 	}
+}
+
+func verifyAnnotations(t *testing.T, req *http.Request, want string) error {
+	ev, err := kaudit.NewEventFromRequest(
+		req, time.Now(),
+		apiaudit.LevelRequestResponse,
+		&authorizer.AttributesRecord{},
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ev.Annotations) == 0 {
+		return fmt.Errorf("ev.Annotations is empty")
+	}
+
+	have, ok := ev.Annotations[audit.UsernameAnnotation]
+	if !ok {
+		return fmt.Errorf("Didn't find %s", audit.UsernameAnnotation)
+	}
+
+	if have != want {
+		return fmt.Errorf("have: %s, want: %s", have, want)
+	}
+
+	return nil
 }

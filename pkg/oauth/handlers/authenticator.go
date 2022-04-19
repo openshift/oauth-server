@@ -10,6 +10,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 
 	"github.com/openshift/oauth-server/pkg/api"
+	"github.com/openshift/oauth-server/pkg/audit"
 	openshiftauthenticator "github.com/openshift/oauth-server/pkg/authenticator"
 	"github.com/openshift/oauth-server/pkg/osinserver"
 )
@@ -78,9 +79,10 @@ type accessAuthenticator struct {
 // HandleAccess implements osinserver.AccessHandler
 func (h *accessAuthenticator) HandleAccess(ar *osin.AccessRequest, w http.ResponseWriter) error {
 	var (
-		info *authenticator.Response
-		ok   bool
-		err  error
+		info     *authenticator.Response
+		ok       bool
+		err      error
+		decision audit.Decision
 	)
 
 	switch ar.Type {
@@ -92,7 +94,9 @@ func (h *accessAuthenticator) HandleAccess(ar *osin.AccessRequest, w http.Respon
 		if ar.HttpRequest != nil {
 			ctx = ar.HttpRequest.Context()
 		}
+
 		info, ok, err = h.password.AuthenticatePassword(ctx, ar.Username, ar.Password)
+		defer audit.AddDecisionAnnotation(ar.HttpRequest, decision)
 	case osin.ASSERTION:
 		info, ok, err = h.assertion.AuthenticateAssertion(ar.AssertionType, ar.Assertion)
 	case osin.CLIENT_CREDENTIALS:
@@ -101,24 +105,29 @@ func (h *accessAuthenticator) HandleAccess(ar *osin.AccessRequest, w http.Respon
 		klog.Warningf("Received unknown access token type: %s", ar.Type)
 	}
 
+	audit.AddUsernameAnnotation(ar.HttpRequest, ar.Username)
 	if err != nil {
+		decision = audit.ErrorDecision
 		klog.V(4).Infof("Unable to authenticate %s: %v", ar.Type, err)
 		return err
 	}
+	if !ok {
+		decision = audit.DenyDecision
+		return nil
+	}
+	decision = audit.AllowDecision
 
-	if ok {
-		// Disable refresh_token generation
-		ar.GenerateRefresh = false
-		ar.Authorized = true
-		if info != nil {
-			// TODO something with audiences?
-			ar.AccessData.UserData = info.User
-		}
+	// Disable refresh_token generation
+	ar.GenerateRefresh = false
+	ar.Authorized = true
+	if info != nil {
+		// TODO something with audiences?
+		ar.AccessData.UserData = info.User
+	}
 
-		if e, ok := ar.Client.(TokenMaxAgeSeconds); ok {
-			if maxAge := e.GetTokenMaxAgeSeconds(); maxAge != nil {
-				ar.Expiration = *maxAge
-			}
+	if e, ok := ar.Client.(TokenMaxAgeSeconds); ok {
+		if maxAge := e.GetTokenMaxAgeSeconds(); maxAge != nil {
+			ar.Expiration = *maxAge
 		}
 	}
 

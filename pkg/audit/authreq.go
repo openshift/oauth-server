@@ -17,11 +17,11 @@ func (f AuthenticatorFunc) AuthenticateRequest(req *http.Request) (*authenticato
 	return f(req)
 }
 
-// AuthenticatorRequestWithAuditDecision annotates the audit log with the final decision of the
+// AuthenticatorRequestWithAudit annotates the audit log with the final decision of the
 // union of authenticator.Requests. We can have several authenticator.Requesters hidden behind one
 // and unified with union. If we set the decision on anything except the last, we will get a
 // potentially wrong decision.
-func AuthenticatorRequestWithAuditDecision(authReq authenticator.Request) authenticator.Request {
+func AuthenticatorRequestWithAudit(authReq authenticator.Request) authenticator.Request {
 	return AuthenticatorFunc(func(req *http.Request) (*authenticator.Response, bool, error) {
 		res, ok, err := authReq.AuthenticateRequest(req)
 
@@ -32,6 +32,12 @@ func AuthenticatorRequestWithAuditDecision(authReq authenticator.Request) authen
 			AddDecisionAnnotation(req, DenyDecision)
 		case ok:
 			AddDecisionAnnotation(req, AllowDecision)
+		}
+
+		if res != nil && res.User != nil {
+			// This is only best effort. In the case of !ok or err, it won't have
+			// values in most cases.
+			AddUsernameAnnotation(req, res.User.GetName())
 		}
 
 		return res, ok, err

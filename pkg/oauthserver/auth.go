@@ -627,7 +627,7 @@ func (c *OAuthServerConfig) getAuthenticationRequestHandlerWithAudit() (authenti
 		return authReq, err
 	}
 
-	return audit.AuthenticatorRequestWithAuditDecision(authReq), nil
+	return audit.AuthenticatorRequestWithAudit(authReq), nil
 }
 
 func (c *OAuthServerConfig) getAuthenticationRequestHandler() (authenticator.Request, error) {

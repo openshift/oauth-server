@@ -39,5 +39,9 @@ func AddDecisionAnnotation(req *http.Request, decision Decision) {
 // be handled down through an authenticator.Response as this one get erased on
 // `!ok` or `err != nil` case.
 func AddUsernameAnnotation(req *http.Request, username string) {
+	if username == "" {
+		return
+	}
+
 	kaudit.AddAuditAnnotation(req.Context(), UsernameAnnotation, username)
 }
