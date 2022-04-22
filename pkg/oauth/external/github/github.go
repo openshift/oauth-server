@@ -95,7 +95,10 @@ type githubTeam struct {
 	Organization githubOrg
 }
 
-var _ external.Provider = &provider{}
+var (
+	_       external.Provider = &provider{}
+	errNoID                   = errors.New("Could not retrieve GitHub id")
+)
 
 func NewProvider(providerName, clientID, clientSecret, hostname string, transport http.RoundTripper, organizations, teams []string) external.Provider {
 	allowedOrganizations := sets.NewString()
@@ -175,7 +178,48 @@ func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdenti
 		return nil, err
 	}
 	if userdata.ID == 0 {
-		return nil, errors.New("Could not retrieve GitHub id")
+		return nil, errNoID
+	}
+
+	// Apply authorization rules
+	if len(p.allowedOrganizations) > 0 {
+		userOrgs, err := p.getUserOrgs(data.AccessToken)
+		if err != nil {
+			return nil, NewAuthorizationError(
+				userdata.Login, "gets user orgs from access token", err,
+			)
+		}
+
+		if !userOrgs.HasAny(p.allowedOrganizations.List()...) {
+			return nil, NewAuthorizationErrorf(
+				userdata.Login,
+				"is not a member of any allowed organizations %v (user is a member of %v)",
+				p.allowedOrganizations.List(),
+				userOrgs.List(),
+			)
+		}
+
+		klog.V(4).Infof("User %s is a member of organizations %v)", userdata.Login, userOrgs.List())
+	}
+
+	if len(p.allowedTeams) > 0 {
+		userTeams, err := p.getUserTeams(data.AccessToken)
+		if err != nil {
+			return nil, NewAuthorizationError(
+				userdata.Login, "gets user teams from access token", err,
+			)
+		}
+
+		if !userTeams.HasAny(p.allowedTeams.List()...) {
+			return nil, NewAuthorizationErrorf(
+				userdata.Login,
+				"is not a member of any allowed teams %v (user is a member of %v)",
+				p.allowedTeams.List(),
+				userTeams.List(),
+			)
+		}
+
+		klog.V(4).Infof("User %s is a member of teams %v)", userdata.Login, userTeams.List())
 	}
 
 	// The returned email is empty if the user has not specified a public email address in their profile
@@ -199,30 +243,6 @@ func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdenti
 		identity.Extra[authapi.IdentityEmailKey] = userdata.Email
 	}
 	klog.V(4).Infof("Got identity=%#v", identity)
-
-	// Apply authorization rules
-	if len(p.allowedOrganizations) > 0 {
-		userOrgs, err := p.getUserOrgs(data.AccessToken)
-		if err != nil {
-			return identity, err
-		}
-
-		if !userOrgs.HasAny(p.allowedOrganizations.List()...) {
-			return identity, newAuthorizationErrorf("User %s is not a member of any allowed organizations %v (user is a member of %v)", userdata.Login, p.allowedOrganizations.List(), userOrgs.List())
-		}
-		klog.V(4).Infof("User %s is a member of organizations %v)", userdata.Login, userOrgs.List())
-	}
-	if len(p.allowedTeams) > 0 {
-		userTeams, err := p.getUserTeams(data.AccessToken)
-		if err != nil {
-			return identity, err
-		}
-
-		if !userTeams.HasAny(p.allowedTeams.List()...) {
-			return identity, newAuthorizationErrorf("User %s is not a member of any allowed teams %v (user is a member of %v)", userdata.Login, p.allowedTeams.List(), userTeams.List())
-		}
-		klog.V(4).Infof("User %s is a member of teams %v)", userdata.Login, userTeams.List())
-	}
 
 	return identity, nil
 }

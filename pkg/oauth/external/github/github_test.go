@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/RangelReale/osincli"
 	"github.com/openshift/oauth-server/pkg/api"
@@ -15,18 +16,18 @@ import (
 )
 
 func TestGetUserIdentity(t *testing.T) {
-	newGithubIdentityProvider := func(userID uint64, orgs []string) http.RoundTripper {
+	newGithubIdentityProvider := func(username string, orgs []string) http.RoundTripper {
 		return roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 			body := new(bytes.Buffer)
 
 			switch req.URL.Path {
 			case "/user":
 				if err := json.NewEncoder(body).Encode(struct {
-					ID                 uint64
+					ID                 int64
 					Login, Email, Name string
 				}{
-					ID:    userID,
-					Login: "loginname",
+					ID:    time.Now().Unix(),
+					Login: username,
 					Email: "user@example.com",
 					Name:  "drago_tommasone",
 				}); err != nil {
@@ -71,19 +72,33 @@ func TestGetUserIdentity(t *testing.T) {
 	checks := func(fns ...checkFunc) []checkFunc { return fns }
 
 	hasUserID := func(want string) checkFunc {
-		return func(userIdentityInfo api.UserIdentityInfo, _ error) error {
-			if have := userIdentityInfo.GetIdentityName(); want != have {
+		return func(userIdentityInfo api.UserIdentityInfo, err error) error {
+			var have string
+
+			var authErr external.AuthorizationError
+			if err != nil && errors.As(err, &authErr) {
+				have = authErr.Username()
+			}
+
+			if userIdentityInfo != nil {
+				have = userIdentityInfo.GetProviderPreferredUserName()
+			}
+
+			if want != have {
 				return fmt.Errorf("expected username %q, got %q", want, have)
 			}
+
 			return nil
 		}
 	}
+
 	isAllowed := func(_ api.UserIdentityInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf("unexpected error: %v", err)
 		}
 		return nil
 	}
+
 	isDenied := func(_ api.UserIdentityInfo, err error) error {
 		if err == nil {
 			return fmt.Errorf("expected authorization error, got nil")
@@ -94,82 +109,70 @@ func TestGetUserIdentity(t *testing.T) {
 		}
 		return nil
 	}
-	throwsError := func(_ api.UserIdentityInfo, err error) error {
-		if err == nil {
-			return fmt.Errorf("expected error, got nil")
-		}
-		return nil
-	}
 
 	for _, tc := range [...]struct {
 		name                 string
-		userID               uint64
+		username             string
 		userOrganizations    []string
 		allowedOrganizations []string
 
 		checks []checkFunc
 	}{
 		{
-			name:   "ok",
-			userID: 123654,
+			name:     "ok",
+			username: "franta",
 			checks: checks(
 				isAllowed,
-				hasUserID("git-tub:123654"),
+				hasUserID("franta"),
 			),
 		},
 		{
 			name:                 "ok with organization check",
-			userID:               564738,
+			username:             "franta",
 			userOrganizations:    []string{"vip"},
 			allowedOrganizations: []string{"vip"},
 			checks: checks(
 				isAllowed,
-				hasUserID("git-tub:564738"),
+				hasUserID("franta"),
 			),
 		},
 		{
 			name:                 "ok with organization check, member of multiple",
-			userID:               564738,
+			username:             "franta",
 			userOrganizations:    []string{"openshift", "gophercloud", "vip", "kubernetes"},
 			allowedOrganizations: []string{"vip"},
 			checks: checks(
 				isAllowed,
-				hasUserID("git-tub:564738"),
+				hasUserID("franta"),
 			),
 		},
 		{
 			name:                 "ok with organization check, multiple allowed",
-			userID:               564738,
+			username:             "franta",
 			userOrganizations:    []string{"vip"},
 			allowedOrganizations: []string{"vip", "openshift", "kubernetes"},
 			checks: checks(
 				isAllowed,
-				hasUserID("git-tub:564738"),
+				hasUserID("franta"),
 			),
 		},
 		{
 			name:                 "denied, not in organization",
-			userID:               98765491,
+			username:             "franta",
 			userOrganizations:    []string{"microsoft"},
 			allowedOrganizations: []string{"neovim"},
 			checks: checks(
 				isDenied,
-				hasUserID("git-tub:98765491"),
+				hasUserID("franta"),
 			),
 		},
 		{
 			name:                 "denied, not in any organization",
-			userID:               987654,
+			username:             "franta",
 			allowedOrganizations: []string{"vip"},
 			checks: checks(
 				isDenied,
-				hasUserID("git-tub:987654"),
-			),
-		},
-		{
-			name: "denied, no userID",
-			checks: checks(
-				throwsError,
+				hasUserID("franta"),
 			),
 		},
 	} {
@@ -179,7 +182,7 @@ func TestGetUserIdentity(t *testing.T) {
 				"my_client_id",
 				"my_client_secret",
 				"",
-				newGithubIdentityProvider(tc.userID, tc.userOrganizations),
+				newGithubIdentityProvider(tc.username, tc.userOrganizations),
 				tc.allowedOrganizations,
 				nil,
 			).GetUserIdentity(&osincli.AccessData{})

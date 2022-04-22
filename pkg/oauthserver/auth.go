@@ -399,7 +399,14 @@ func (c *OAuthServerConfig) getAuthenticationHandler(mux oauthserver.Mux, errorH
 			oauthErrorHandler := handlers.AuthenticationErrorHandlers{errorHandler, state}
 
 			callbackPath := path.Join(openShiftOAuthCallbackPrefix, identityProvider.Name)
-			oauthRedirector, oauthHandler, err := external.NewExternalOAuthRedirector(oauthProvider, state, c.ExtraOAuthConfig.Options.MasterPublicURL+callbackPath, oauthSuccessHandler, oauthErrorHandler, identityMapper)
+			oauthRedirector, oauthHandler, err := external.NewExternalOAuthRedirector(
+				oauthProvider,
+				state,
+				c.ExtraOAuthConfig.Options.MasterPublicURL+callbackPath,
+				oauthSuccessHandler,
+				oauthErrorHandler,
+				identityMapper,
+			)
 			if err != nil {
 				return nil, fmt.Errorf("unexpected error: %v", err)
 			}
@@ -663,7 +670,10 @@ func (c *OAuthServerConfig) getAuthenticationRequestHandler() (authenticator.Req
 			if err != nil {
 				return nil, err
 			}
-			oauthPasswordAuthenticator, err := external.NewOAuthPasswordAuthenticator(oauthProvider, identityMapper)
+			oauthPasswordAuthenticator, err := external.NewOAuthPasswordAuthenticator(
+				oauthProvider,
+				identityMapper,
+			)
 			if err != nil {
 				return nil, fmt.Errorf("unexpected error: %v", err)
 			}

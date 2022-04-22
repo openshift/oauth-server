@@ -82,7 +82,10 @@ func (p *provider) AddCustomParameters(req *osincli.AuthorizeRequest) {}
 
 // GetUserIdentity implements external/interfaces/Provider.GetUserIdentity
 func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentityInfo, error) {
-	req, _ := http.NewRequest("GET", p.userAPIURL, nil)
+	req, err := http.NewRequest("GET", p.userAPIURL, nil)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", data.AccessToken))
 
 	client := http.DefaultClient
@@ -101,8 +104,7 @@ func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdenti
 	}
 
 	userdata := gitlabUser{}
-	err = json.Unmarshal(body, &userdata)
-	if err != nil {
+	if err = json.Unmarshal(body, &userdata); err != nil {
 		return nil, err
 	}
 

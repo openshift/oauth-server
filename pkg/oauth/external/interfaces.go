@@ -32,7 +32,9 @@ type State interface {
 	Check(state string, req *http.Request) (bool, error)
 }
 
+// AuthorizationError is an error type that stores the username that ran into an
+// error.
 type AuthorizationError interface {
 	error
-	AuthorizationDenialReason() string
+	Username() string
 }

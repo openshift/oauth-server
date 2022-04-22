@@ -34,7 +34,14 @@ type Handler struct {
 	mapper       authapi.UserIdentityMapper
 }
 
-func NewExternalOAuthRedirector(provider Provider, state State, redirectURL string, success handlers.AuthenticationSuccessHandler, errorHandler handlers.AuthenticationErrorHandler, mapper authapi.UserIdentityMapper) (handlers.AuthenticationRedirector, http.Handler, error) {
+func NewExternalOAuthRedirector(
+	provider Provider,
+	state State,
+	redirectURL string,
+	success handlers.AuthenticationSuccessHandler,
+	errorHandler handlers.AuthenticationErrorHandler,
+	mapper authapi.UserIdentityMapper,
+) (handlers.AuthenticationRedirector, http.Handler, error) {
 	clientConfig, err := provider.NewConfig()
 	if err != nil {
 		return nil, nil, err
@@ -86,7 +93,10 @@ func (h *Handler) AuthenticationRedirect(w http.ResponseWriter, req *http.Reques
 	return nil
 }
 
-func NewOAuthPasswordAuthenticator(provider Provider, mapper authapi.UserIdentityMapper) (openshiftauthenticator.PasswordAuthenticator, error) {
+func NewOAuthPasswordAuthenticator(
+	provider Provider,
+	mapper authapi.UserIdentityMapper,
+) (openshiftauthenticator.PasswordAuthenticator, error) {
 	clientConfig, err := provider.NewConfig()
 	if err != nil {
 		return nil, err
@@ -131,8 +141,15 @@ func (h *Handler) AuthenticatePassword(ctx context.Context, username, password s
 
 	identity, err := h.provider.GetUserIdentity(accessData)
 	if err != nil {
-		klog.V(4).Infof("Error getting userIdentityInfo info: %v", err)
-		return nil, false, err
+		var authErr AuthorizationError
+		if errors.As(err, &authErr) {
+			klog.V(4).Infof("Could not get userIdentityInfo info from access token")
+			err := errors.New("Could not get userIdentityInfo info from access token")
+			return nil, false, err
+		} else {
+			klog.V(4).Infof("Error getting userIdentityInfo info: %v", err)
+			return nil, false, err
+		}
 	}
 
 	return identitymapper.ResponseFor(h.mapper, identity)
@@ -140,14 +157,22 @@ func (h *Handler) AuthenticatePassword(ctx context.Context, username, password s
 
 // ServeHTTP handles the callback request in response to an external oauth flow
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	accessData, state, err := h.getToken(req)
+	if err != nil {
+		h.handleError(err, w, req)
+		return
+	}
 
+	h.authenticate(w, req, accessData, state)
+}
+
+func (h *Handler) getToken(req *http.Request) (*osincli.AccessData, string, error) {
 	// Extract auth code
 	authReq := h.client.NewAuthorizeRequest(osincli.CODE)
 	authData, err := authReq.HandleRequest(req)
 	if err != nil {
 		klog.V(4).Infof("Error handling request: %v", err)
-		h.handleError(err, w, req)
-		return
+		return nil, "", err
 	}
 
 	klog.V(4).Infof("Got auth data")
@@ -156,14 +181,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ok, err := h.state.Check(authData.State, req)
 	if err != nil {
 		klog.V(4).Infof("Error verifying state: %v", err)
-		h.handleError(err, w, req)
-		return
+		return nil, "", err
 	}
 	if !ok {
 		klog.V(4).Infof("State is invalid")
-		err := errors.New("State is invalid")
-		h.handleError(err, w, req)
-		return
+		return nil, "", errors.New("State is invalid")
 	}
 
 	// Exchange code for a token
@@ -171,49 +193,58 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	accessData, err := accessReq.GetToken()
 	if err != nil {
 		klog.V(2).Infof("Error getting access token from an external OIDC provider (%s): %v", accessReq.GetTokenUrl(), err)
+		return nil, "", err
+	}
+
+	klog.V(5).Infof("Got access data")
+
+	return accessData, authData.State, nil
+}
+
+func (h *Handler) authenticate(
+	w http.ResponseWriter,
+	req *http.Request,
+	accessData *osincli.AccessData,
+	state string,
+) {
+	identity, err := h.provider.GetUserIdentity(accessData)
+	if err != nil {
+		var authErr AuthorizationError
+		if errors.As(err, &authErr) {
+			klog.V(4).Infof("Authorization error: %w", authErr)
+			audit.AddUsernameAnnotation(req, authErr.Username())
+			audit.AddDecisionAnnotation(req, audit.DenyDecision)
+		} else {
+			klog.V(4).Infof("Error getting userIdentityInfo info: %v", err)
+			audit.AddDecisionAnnotation(req, audit.ErrorDecision)
+		}
+
 		h.handleError(err, w, req)
 		return
 	}
 
-	klog.V(5).Infof("Got access data")
-	h.login(w, req, accessData, authData.State)
-}
-
-func (h *Handler) login(w http.ResponseWriter, req *http.Request, accessData *osincli.AccessData, state string) {
-	identity, err := h.provider.GetUserIdentity(accessData)
-	if identity != nil {
-		audit.AddUsernameAnnotation(req, identity.GetIdentityName())
-	}
-	if err != nil {
-		var authorizationError AuthorizationError
-		if errors.As(err, &authorizationError) {
-			klog.V(4).Infof("Authorization error: %v", authorizationError.AuthorizationDenialReason())
-			audit.AddDecisionAnnotation(req, audit.DenyDecision)
-			h.handleError(err, w, req)
-			return
-		} else {
-			klog.V(4).Infof("Error getting userIdentityInfo info: %v", err)
-			audit.AddDecisionAnnotation(req, audit.ErrorDecision)
-			h.handleError(err, w, req)
-			return
-		}
-	}
-	audit.AddDecisionAnnotation(req, audit.AllowDecision)
-
 	user, err := h.mapper.UserFor(identity)
 	if err != nil {
+		audit.AddUsernameAnnotation(req, identity.GetProviderPreferredUserName())
+		audit.AddDecisionAnnotation(req, audit.ErrorDecision)
 		klog.V(4).Infof("Error creating or updating mapping for: %#v due to %v", identity, err)
 		h.handleError(err, w, req)
 		return
 	}
+
 	klog.V(4).Infof("Got userIdentityMapping: %#v", user)
 
 	_, err = h.success.AuthenticationSucceeded(user, state, w, req)
 	if err != nil {
+		audit.AddUsernameAnnotation(req, user.GetName())
+		audit.AddDecisionAnnotation(req, audit.ErrorDecision)
 		klog.V(4).Infof("Error calling success handler: %v", err)
 		h.handleError(err, w, req)
 		return
 	}
+
+	audit.AddUsernameAnnotation(req, user.GetName())
+	audit.AddDecisionAnnotation(req, audit.AllowDecision)
 }
 
 func (h *Handler) handleError(err error, w http.ResponseWriter, req *http.Request) {
