@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/RangelReale/osin"
+	"github.com/openshift/osin"
 	"gopkg.in/square/go-jose.v2/jwt"
 
 	tokenreviewv1 "k8s.io/api/authentication/v1"

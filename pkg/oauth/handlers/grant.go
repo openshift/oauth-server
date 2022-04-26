@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/RangelReale/osin"
+	"github.com/openshift/osin"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"

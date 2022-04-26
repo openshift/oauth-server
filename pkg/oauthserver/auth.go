@@ -11,8 +11,8 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/RangelReale/osin"
 	"github.com/RangelReale/osincli"
+	"github.com/openshift/osin"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knet "k8s.io/apimachinery/pkg/util/net"

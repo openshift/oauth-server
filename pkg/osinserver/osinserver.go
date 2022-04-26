@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/RangelReale/osin"
+	"github.com/openshift/osin"
 	"k8s.io/klog/v2"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"

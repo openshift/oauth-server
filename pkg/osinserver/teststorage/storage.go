@@ -3,7 +3,7 @@ package teststorage
 import (
 	"errors"
 
-	"github.com/RangelReale/osin"
+	"github.com/openshift/osin"
 )
 
 type Test struct {
