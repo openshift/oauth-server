@@ -7,6 +7,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 
 	authapi "github.com/openshift/oauth-server/pkg/api"
+	"github.com/openshift/oauth-server/pkg/audit"
 	"github.com/openshift/oauth-server/pkg/authenticator/identitymapper"
 )
 
@@ -49,7 +50,12 @@ func (a *Authenticator) AuthenticateRequest(req *http.Request) (*authenticator.R
 		identity.Extra[authapi.IdentityPreferredUsernameKey] = preferredUsername
 	}
 
-	return identitymapper.ResponseFor(a.mapper, identity)
+	res, ok, err := identitymapper.ResponseFor(a.mapper, identity)
+	if res != nil && res.User != nil {
+		audit.AddUsernameAnnotation(req, res.User.GetName())
+	}
+
+	return res, ok, err
 }
 
 func headerValue(h http.Header, headerNames []string) string {

@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/oauth-server/pkg/audit"
 	kaudit "k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"k8s.io/apiserver/pkg/authentication/user"
 )
 
 // mustShallowRequestWithAnnotations could be extended with more features in the
@@ -32,6 +33,14 @@ func makeAuthReq(res *authenticator.Response, ok bool, err error) authenticator.
 	})
 }
 
+func makeAuthResponse(username string) *authenticator.Response {
+	return &authenticator.Response{
+		User: &user.DefaultInfo{
+			Name: username,
+		},
+	}
+}
+
 func TestAuthenticationRequestWithAuditDecision(t *testing.T) {
 	for _, tt := range [...]struct {
 		name string
@@ -40,9 +49,10 @@ func TestAuthenticationRequestWithAuditDecision(t *testing.T) {
 	}{
 		{
 			name: "should audit allow decision",
-			have: makeAuthReq(nil, true, nil),
+			have: makeAuthReq(makeAuthResponse("Franta"), true, nil),
 			want: map[string]string{
 				audit.DecisionAnnotation: string(audit.AllowDecision),
+				audit.UsernameAnnotation: "Franta",
 			},
 		},
 		{
@@ -68,7 +78,7 @@ func TestAuthenticationRequestWithAuditDecision(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			authReq := audit.AuthenticatorRequestWithAuditDecision(tt.have)
+			authReq := audit.AuthenticatorRequestWithAudit(tt.have)
 			req := mustShallowRequestWithAnnotations(t)
 
 			_, _, _ = authReq.AuthenticateRequest(req)
