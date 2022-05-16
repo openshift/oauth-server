@@ -1,6 +1,6 @@
 module github.com/openshift/oauth-server
 
-go 1.17
+go 1.18
 
 require (
 	github.com/RangelReale/osincli v0.0.0
