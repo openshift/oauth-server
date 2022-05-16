@@ -2,20 +2,160 @@ package external
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/RangelReale/osincli"
+	"github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
+	auditapi "k8s.io/apiserver/pkg/apis/audit"
+	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/apiserver/pkg/authorization/authorizer"
 )
 
 func TestHandler(t *testing.T) {
 	redirectors := new(handlers.AuthenticationRedirectors)
 	redirectors.Add("handler", &Handler{})
 	_ = handlers.NewUnionAuthenticationHandler(nil, redirectors, nil, nil)
+}
+
+func TestHandlerLogin(t *testing.T) {
+	t.Run("audit", func(t *testing.T) {
+		type checkFunc func(*auditapi.Event, authenticationHandler, *userIdentityMapper) error
+
+		eventHasUsername := func(want string) checkFunc {
+			return func(ev *auditapi.Event, _ authenticationHandler, _ *userIdentityMapper) error {
+				if have := ev.Annotations["authentication.openshift.io/username"]; want != have {
+					return fmt.Errorf("expected username %q, found %q", want, have)
+				}
+				return nil
+			}
+		}
+		eventHasDecision := func(want string) checkFunc {
+			return func(ev *auditapi.Event, _ authenticationHandler, _ *userIdentityMapper) error {
+				if have := ev.Annotations["authentication.openshift.io/decision"]; want != have {
+					return fmt.Errorf("expected decision %q, found %q", want, have)
+				}
+				return nil
+			}
+		}
+		isAuthorized := func(_ *auditapi.Event, h authenticationHandler, _ *userIdentityMapper) error {
+			if !h.success {
+				return fmt.Errorf("expected call to success handler did not happen")
+			}
+			if h.failure {
+				return fmt.Errorf("unexpected call to error handler")
+			}
+			return nil
+		}
+		isNotAuthorized := func(_ *auditapi.Event, h authenticationHandler, _ *userIdentityMapper) error {
+			if !h.failure {
+				return fmt.Errorf("expected call to error handler did not happen")
+			}
+			if h.success {
+				return fmt.Errorf("unexpected call to success handler")
+			}
+			return nil
+		}
+		mapperWasNotCalled := func(_ *auditapi.Event, _ authenticationHandler, m *userIdentityMapper) error {
+			if m.wasCalled {
+				return fmt.Errorf("the identity mapper was called upon unsuccessful auth")
+			}
+			return nil
+		}
+
+		for _, tc := range [...]struct {
+			name     string
+			username string
+			err      error
+			checks   []checkFunc
+		}{
+			{
+				name:     "authorized",
+				username: "boucle_d_or",
+				err:      nil,
+				checks: []checkFunc{
+					eventHasUsername("boucle_d_or"),
+					eventHasDecision("allow"),
+					isAuthorized,
+				},
+			},
+			{
+				name:     "error",
+				username: "boucle_d_or",
+				err:      fmt.Errorf("identity provider error"),
+				checks: []checkFunc{
+					eventHasDecision("error"),
+					isNotAuthorized,
+					mapperWasNotCalled,
+				},
+			},
+			{
+				name:     "unauthorized",
+				username: "boucle_d_or",
+				err: api.NewAuthorizationDeniedError(
+					api.NewDefaultUserIdentityInfo("testprovider", "boucle_d_or"),
+					errors.New("user not in group"),
+				),
+				checks: []checkFunc{
+					eventHasUsername("boucle_d_or"),
+					eventHasDecision("deny"),
+					isNotAuthorized,
+					mapperWasNotCalled,
+				},
+			},
+			{
+				name:     "error_with_username",
+				username: "boucle_d_or",
+				err: api.NewAuthorizationFailedError(
+					api.NewDefaultUserIdentityInfo("testprovider", "boucle_d_or"),
+					errors.New("user not in group"),
+				),
+				checks: []checkFunc{
+					eventHasUsername("boucle_d_or"),
+					eventHasDecision("error"),
+					isNotAuthorized,
+					mapperWasNotCalled,
+				},
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				authHandler := new(authenticationHandler)
+				identityMapper := new(userIdentityMapper)
+				h := Handler{
+					provider: provider{
+						name:     "testprovider",
+						username: tc.username,
+						err:      tc.err,
+					},
+					mapper:       identityMapper,
+					success:      authHandler,
+					errorHandler: authHandler,
+				}
+
+				req := httptest.NewRequest(http.MethodPost, "https://auth.example.com/callback", nil)
+				req = req.WithContext(audit.WithAuditAnnotations(req.Context()))
+
+				h.login(httptest.NewRecorder(), req, nil, "state")
+
+				ev, err := audit.NewEventFromRequest(req, time.Time{}, "Request", authorizer.AttributesRecord{})
+				if err != nil {
+					t.Fatalf("unexpected error in retrieving the audit events: %v", err)
+				}
+
+				for _, check := range tc.checks {
+					if err := check(ev, *authHandler, identityMapper); err != nil {
+						t.Error(err)
+					}
+				}
+			})
+		}
+	})
 }
 
 func TestRedirectingStateValidCSRF(t *testing.T) {
@@ -148,4 +288,41 @@ func TestRedirectingStateError(t *testing.T) {
 	if err != inErr {
 		t.Errorf("Expected original error back, got %#v", err)
 	}
+}
+
+type provider struct {
+	name     string
+	username string
+	err      error
+	Provider
+}
+
+func (p provider) GetUserIdentity(*osincli.AccessData) (api.UserIdentityInfo, error) {
+	return &api.DefaultUserIdentityInfo{
+		ProviderName:     p.name,
+		ProviderUserName: p.username,
+	}, p.err
+}
+
+type userIdentityMapper struct {
+	wasCalled bool
+}
+
+func (m *userIdentityMapper) UserFor(identityInfo api.UserIdentityInfo) (user.Info, error) {
+	m.wasCalled = true
+	return &user.DefaultInfo{Name: identityInfo.GetProviderUserName()}, nil
+}
+
+type authenticationHandler struct {
+	success bool
+	failure bool
+}
+
+func (h *authenticationHandler) AuthenticationSucceeded(user.Info, string, http.ResponseWriter, *http.Request) (bool, error) {
+	h.success = true
+	return true, nil
+}
+func (h *authenticationHandler) AuthenticationError(error, http.ResponseWriter, *http.Request) (bool, error) {
+	h.failure = true
+	return true, nil
 }

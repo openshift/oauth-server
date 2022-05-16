@@ -17,8 +17,9 @@ type Provider interface {
 	GetTransport() (http.RoundTripper, error)
 	// AddCustomParameters allows an external oauth provider to provide parameters that are extension to the spec.  Some providers require this.
 	AddCustomParameters(*osincli.AuthorizeRequest)
-	// GetUserIdentity takes the external oauth token information this and returns the user identity, isAuthenticated, and error
-	GetUserIdentity(*osincli.AccessData) (authapi.UserIdentityInfo, bool, error)
+	// GetUserIdentity takes the external oauth token information and returns the user identity or a non-nil error.
+	// When error is non-nil and the user identity is available, the returned error is of type AuthorizationDenialError or AuthorizationFailureError.
+	GetUserIdentity(*osincli.AccessData) (authapi.UserIdentityInfo, error)
 }
 
 // State handles generating and verifying the state parameter round-tripped to an external OAuth flow.

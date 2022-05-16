@@ -81,7 +81,7 @@ func (p *provider) NewConfig() (*osincli.ClientConfig, error) {
 func (p *provider) AddCustomParameters(req *osincli.AuthorizeRequest) {}
 
 // GetUserIdentity implements external/interfaces/Provider.GetUserIdentity
-func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentityInfo, bool, error) {
+func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdentityInfo, error) {
 	req, _ := http.NewRequest("GET", p.userAPIURL, nil)
 	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", data.AccessToken))
 
@@ -91,23 +91,23 @@ func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdenti
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	userdata := gitlabUser{}
 	err = json.Unmarshal(body, &userdata)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	if userdata.ID == 0 {
-		return nil, false, errors.New("Could not retrieve GitLab id")
+		return nil, errors.New("Could not retrieve GitLab id")
 	}
 
 	identity := authapi.NewDefaultUserIdentityInfo(p.providerName, fmt.Sprintf("%d", userdata.ID))
@@ -122,5 +122,5 @@ func (p *provider) GetUserIdentity(data *osincli.AccessData) (authapi.UserIdenti
 	}
 	klog.V(4).Infof("Got identity=%#v", identity)
 
-	return identity, true, nil
+	return identity, nil
 }
