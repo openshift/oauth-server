@@ -28,7 +28,7 @@ type OsinServerOptions struct {
 	Audit      *options.AuditOptions
 }
 
-func NewOsinServerCommand(out, errout io.Writer, stopCh <-chan struct{}) *cobra.Command {
+func NewOsinServerCommand(out, errout io.Writer, stopCh <-chan struct{}) (*cobra.Command, error) {
 	options := &OsinServerOptions{
 		Audit: options.NewAuditOptions(),
 	}
@@ -63,10 +63,14 @@ func NewOsinServerCommand(out, errout io.Writer, stopCh <-chan struct{}) *cobra.
 	options.Audit.AddFlags(flags)
 
 	flags.StringVar(&options.ConfigFile, "config", "", "Location of the osin configuration file to run from.")
-	cmd.MarkFlagFilename("config", "yaml", "yml")
-	cmd.MarkFlagRequired("config")
+	if err := cmd.MarkFlagFilename("config", "yaml", "yml"); err != nil {
+		return nil, err
+	}
+	if err := cmd.MarkFlagRequired("config"); err != nil {
+		return nil, err
+	}
 
-	return cmd
+	return cmd, nil
 }
 
 func (o *OsinServerOptions) Validate() error {

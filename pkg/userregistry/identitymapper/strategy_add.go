@@ -2,6 +2,7 @@ package identitymapper
 
 import (
 	"context"
+	"fmt"
 
 	userapi "github.com/openshift/api/user/v1"
 	userclient "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
@@ -33,7 +34,11 @@ func (s *StrategyAdd) UserForNewIdentity(ctx context.Context, preferredUserName 
 		desiredUser := &userapi.User{}
 		desiredUser.Name = preferredUserName
 		desiredUser.Identities = []string{identity.Name}
-		s.initializer.InitializeUser(identity, desiredUser)
+
+		if err = s.initializer.InitializeUser(identity, desiredUser); err != nil {
+			return nil, fmt.Errorf("failed to initialize user with identity (%v): %w", identity, err)
+		}
+
 		return s.user.Create(context.TODO(), desiredUser, metav1.CreateOptions{})
 
 	case err == nil:
@@ -46,8 +51,11 @@ func (s *StrategyAdd) UserForNewIdentity(ctx context.Context, preferredUserName 
 		persistedUser.Identities = append(persistedUser.Identities, identity.Name)
 		// If our newly added identity is the only one, initialize the user
 		if len(persistedUser.Identities) == 1 {
-			s.initializer.InitializeUser(identity, persistedUser)
+			if err = s.initializer.InitializeUser(identity, persistedUser); err != nil {
+				return nil, fmt.Errorf("failed to initialize user with identity (%v): %w", identity, err)
+			}
 		}
+
 		return s.user.Update(context.TODO(), persistedUser, metav1.UpdateOptions{})
 
 	default:

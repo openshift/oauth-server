@@ -34,7 +34,9 @@ func TestGetInvalidSessionSecretsFile(t *testing.T) {
 	}
 	defer os.Remove(tmpfile.Name())
 
-	ioutil.WriteFile(tmpfile.Name(), []byte("invalid content"), os.FileMode(0600))
+	if err := ioutil.WriteFile(tmpfile.Name(), []byte("invalid content"), os.FileMode(0600)); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err = getSessionSecrets(tmpfile.Name())
 	if err == nil {
@@ -57,7 +59,9 @@ func TestGetEmptySessionSecretsFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	ioutil.WriteFile(tmpfile.Name(), []byte(yaml), os.FileMode(0600))
+	if err := ioutil.WriteFile(tmpfile.Name(), []byte(yaml), os.FileMode(0600)); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err = getSessionSecrets(tmpfile.Name())
 	if err == nil {
@@ -84,7 +88,9 @@ func TestGetValidSessionSecretsFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	ioutil.WriteFile(tmpfile.Name(), []byte(yaml), os.FileMode(0600))
+	if err := ioutil.WriteFile(tmpfile.Name(), []byte(yaml), os.FileMode(0600)); err != nil {
+		t.Fatal(err)
+	}
 
 	readSecrets, err := getSessionSecrets(tmpfile.Name())
 	if err != nil {

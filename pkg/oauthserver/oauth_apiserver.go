@@ -145,7 +145,7 @@ func NewOAuthServerConfig(oauthConfig osinv1.OAuthConfig, userClientConfig *rest
 	}
 
 	userInformer := userinformer.NewSharedInformerFactory(userClient, time.Second*30)
-	if userInformer.User().V1().Groups().Informer().AddIndexers(cache.Indexers{
+	if err := userInformer.User().V1().Groups().Informer().AddIndexers(cache.Indexers{
 		usercache.ByUserIndexName: usercache.ByUserIndexKeys,
 	}); err != nil {
 		return nil, err

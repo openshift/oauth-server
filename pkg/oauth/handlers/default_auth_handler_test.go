@@ -182,10 +182,12 @@ func TestWithChallengeErrorsAndMergedSuccess(t *testing.T) {
 	if !handled {
 		t.Error("Expected handling.")
 	}
-	if !(reflect.DeepEqual(map[string][]string(responseRecorder.HeaderMap), expectedHeader1) || reflect.DeepEqual(map[string][]string(responseRecorder.HeaderMap), expectedHeader2)) {
-		t.Errorf("Expected %#v or %#v, got %#v.", expectedHeader1, expectedHeader2, responseRecorder.HeaderMap)
+
+	res := responseRecorder.Result()
+	if !(reflect.DeepEqual(map[string][]string(res.Header), expectedHeader1) || reflect.DeepEqual(map[string][]string(res.Header), expectedHeader2)) {
+		t.Errorf("Expected %#v or %#v, got %#v.", expectedHeader1, expectedHeader2, res.Header)
 	}
-	if responseRecorder.Code != 401 {
+	if res.StatusCode != 401 {
 		t.Errorf("Expected 401, got %d", responseRecorder.Code)
 	}
 }
@@ -229,19 +231,21 @@ func TestWithRedirect(t *testing.T) {
 	client := &testClient{&oauthapi.OAuthClient{RespondWithChallenges: true}}
 	req, _ := http.NewRequest("GET", "http://example.org", nil)
 	responseRecorder := httptest.NewRecorder()
-	handled, err := authHandler.AuthenticationNeeded(client, responseRecorder, req)
 
+	handled, err := authHandler.AuthenticationNeeded(client, responseRecorder, req)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	if !handled {
 		t.Error("Expected handling.")
 	}
-	if !reflect.DeepEqual(map[string][]string(responseRecorder.HeaderMap), expectedHeader1) {
-		t.Errorf("Expected %#v, got %#v.", expectedHeader1, responseRecorder.HeaderMap)
+
+	res := responseRecorder.Result()
+	if !reflect.DeepEqual(map[string][]string(res.Header), expectedHeader1) {
+		t.Errorf("Expected %#v, got %#v.", expectedHeader1, res.Header)
 	}
-	if responseRecorder.Code != 302 {
-		t.Errorf("Expected 302, got %d", responseRecorder.Code)
+	if res.StatusCode != 302 {
+		t.Errorf("Expected 302, got %d", res.StatusCode)
 	}
 }
 

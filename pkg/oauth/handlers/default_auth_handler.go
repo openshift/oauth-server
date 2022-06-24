@@ -43,10 +43,9 @@ const (
 	// WarningHeaderOpenShiftSource is the name of the agent adding the warning header
 	WarningHeaderOpenShiftSource = "Origin"
 
-	warningHeaderCodeIndex  = 1
-	warningHeaderAgentIndex = 2
-	warningHeaderTextIndex  = 3
-	warningHeaderDateIndex  = 4
+	// There were more indexes, but were unused.
+	warningHeaderCodeIndex = 1
+	warningHeaderTextIndex = 3
 
 	useRedirectParam = "idp"
 )

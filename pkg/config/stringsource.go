@@ -60,6 +60,10 @@ func ResolveStringValue(s configv1.StringSource) (string, error) {
 		return "", fmt.Errorf("no valid PEM block of type %q found in key", StringSourceKeyBlockType)
 	}
 
+	// Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by
+	// design. Since it does not authenticate the ciphertext, it is vulnerable to
+	// padding oracle attacks that can let an attacker recover the plaintext.
+	// TODO: fix it on sender side.
 	data, err := x509.DecryptPEMBlock(secretBlock, keyBlock.Bytes)
 	return string(data), err
 }

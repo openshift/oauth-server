@@ -60,7 +60,7 @@ func TestKeystoneLogin(t *testing.T) {
 		}
 		var x AuthRequest
 		body, _ := ioutil.ReadAll(r.Body)
-		json.Unmarshal(body, &x)
+		th.AssertNoErr(t, json.Unmarshal(body, &x))
 		domainName := x.Auth.Identity.Password.User.Domain.Name
 		userName := x.Auth.Identity.Password.User.Name
 		password := x.Auth.Identity.Password.User.Password
@@ -86,7 +86,7 @@ func TestKeystoneLogin(t *testing.T) {
 							"issued_at": "2015-11-09T00:42:57.527404Z"
 						}
 					}`
-			fmt.Fprintf(w, resp)
+			fmt.Fprintln(w, resp)
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
 		}

@@ -63,7 +63,11 @@ UserSearch:
 			desiredUser := &userapi.User{}
 			desiredUser.Name = potentialUserName
 			desiredUser.Identities = []string{identity.Name}
-			s.initializer.InitializeUser(identity, desiredUser)
+
+			if err := s.initializer.InitializeUser(identity, desiredUser); err != nil {
+				return nil, fmt.Errorf("initialize user with identity (%v): %w", identity, err)
+			}
+
 			return s.user.Create(context.TODO(), desiredUser, metav1.CreateOptions{})
 
 		case err == nil:

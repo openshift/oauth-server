@@ -104,7 +104,9 @@ func (a *Authenticator) AuthenticatePassword(ctx context.Context, username, pass
 	}
 
 	remoteError := RemoteError{}
-	json.Unmarshal(body, &remoteError)
+	if err := json.Unmarshal(body, &remoteError); err != nil {
+		return nil, false, err
+	}
 	if remoteError.Error != "" {
 		return nil, false, errors.New(remoteError.Error)
 	}

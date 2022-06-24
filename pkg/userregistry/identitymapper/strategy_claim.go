@@ -51,7 +51,11 @@ func (s *StrategyClaim) UserForNewIdentity(ctx context.Context, preferredUserNam
 		desiredUser := &userapi.User{}
 		desiredUser.Name = preferredUserName
 		desiredUser.Identities = []string{identity.Name}
-		s.initializer.InitializeUser(identity, desiredUser)
+
+		if err := s.initializer.InitializeUser(identity, desiredUser); err != nil {
+			return nil, fmt.Errorf("initialize user with identity (%v): %w", identity, err)
+		}
+
 		return s.user.Create(context.TODO(), desiredUser, metav1.CreateOptions{})
 
 	case err == nil:
@@ -63,7 +67,11 @@ func (s *StrategyClaim) UserForNewIdentity(ctx context.Context, preferredUserNam
 		// If this user has no other identities, claim, initialize, and update
 		if len(persistedUser.Identities) == 0 {
 			persistedUser.Identities = []string{identity.Name}
-			s.initializer.InitializeUser(identity, persistedUser)
+
+			if err := s.initializer.InitializeUser(identity, persistedUser); err != nil {
+				return nil, fmt.Errorf("initialize user with identity (%v): %w", identity, err)
+			}
+
 			return s.user.Update(context.TODO(), persistedUser, metav1.UpdateOptions{})
 		}
 
