@@ -3,15 +3,14 @@ package handlers
 import (
 	"fmt"
 	"html"
+	"k8s.io/apiserver/pkg/audit"
 	"net/http"
 	"regexp"
 	"strings"
 
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/apiserver/pkg/endpoints/request"
-
 	oauthapi "github.com/openshift/api/oauth/v1"
 	authapi "github.com/openshift/oauth-server/pkg/api"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
 // unionAuthenticationHandler is an oauth.AuthenticationHandler that muxes multiple challenge handlers and redirect handlers
@@ -114,7 +113,7 @@ func (authHandler *unionAuthenticationHandler) AuthenticationNeeded(apiClient au
 				w.WriteHeader(http.StatusFound)
 			default:
 				w.WriteHeader(http.StatusUnauthorized)
-				ev := request.AuditEventFrom(req.Context())
+				ev := audit.AuditEventFrom(req.Context())
 				if ev != nil {
 					// this code mimics the bits from k8s.io/apiserver/pkg/endpoints/filters/authn_audit.go
 					// but since we don't accept failedHander here we need to manually alter the audit
