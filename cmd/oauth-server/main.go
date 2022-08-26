@@ -51,7 +51,7 @@ func main() {
 func NewOpenshiftIntegratedOAuthServerCommand(stopCh <-chan struct{}) (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:   "oauth-server",
-		Short: "Command for the OpenShift integrated OAuth server",
+		Short: "Command for the OpenShift integrated OAuth server ",
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()
 			os.Exit(1)
