@@ -3,6 +3,7 @@ package main
 import (
 	goflag "flag"
 	"fmt"
+	"k8s.io/klog/v2"
 	"math/rand"
 	"os"
 	"runtime"
@@ -22,6 +23,7 @@ import (
 
 func main() {
 	stopCh := genericapiserver.SetupSignalHandler()
+	klog.InitFlags(nil)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
