@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/pflag"
 
 	genericapiserver "k8s.io/apiserver/pkg/server"
+	"k8s.io/component-base/cli"
 	utilflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/logs"
 
@@ -42,10 +43,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(2)
 	}
-	if err := command.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
+	os.Exit(cli.Run(command))
 }
 
 func NewOpenshiftIntegratedOAuthServerCommand(stopCh <-chan struct{}) (*cobra.Command, error) {

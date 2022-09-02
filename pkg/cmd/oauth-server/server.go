@@ -26,7 +26,7 @@ import (
 	"github.com/openshift/oauth-server/pkg/oauthserver"
 
 	// for metrics
-	_ "github.com/openshift/library-go/pkg/controller/metrics"
+	_ "k8s.io/component-base/metrics/prometheus/clientgo"
 )
 
 // RunOsinServer starts a server that is based on the osin and kubernetes/apiserver frameworks.
