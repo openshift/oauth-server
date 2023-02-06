@@ -124,7 +124,7 @@ func (h *Handler) AuthenticatePassword(ctx context.Context, username, password s
 			// An invalid_grant error means the username/password was rejected
 			return nil, false, nil
 		}
-		klog.V(2).Infof("Error getting access token from an external OIDC provider (%s) using resource owner password grant: %v", accessReq.GetTokenUrl(), err)
+		klog.V(2).Infof("Error getting access token from an external OIDC provider (%s) using resource owner password grant: %v", sanitizeURL(*accessReq.GetTokenUrl()), err)
 		return nil, false, err
 	}
 
@@ -137,6 +137,15 @@ func (h *Handler) AuthenticatePassword(ctx context.Context, username, password s
 	}
 
 	return identitymapper.ResponseFor(h.mapper, identity)
+}
+
+// sanitizeURL removes possible sensitive data from the URL, useful for logging
+func sanitizeURL(u url.URL) *url.URL {
+	u.RawQuery = ""
+	u.RawFragment = ""
+	u.User = nil
+
+	return &u
 }
 
 // ServeHTTP handles the callback request in response to an external oauth flow
