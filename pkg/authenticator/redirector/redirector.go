@@ -12,8 +12,9 @@ import (
 // NewRedirector returns an oauthhandlers.AuthenticationRedirector that redirects to the specified redirectURL.
 // Request URLs missing scheme/host, or with relative paths are resolved relative to the baseRequestURL, if specified.
 // The following tokens are replaceable in the query of the redirectURL:
-//   ${url} is replaced with the current request URL, escaped as a query parameter. Example: https://www.example.com/login?then=${url}
-//   ${query} is replaced with the current request query, unescaped. Example: https://www.example.com/sso/oauth/authorize?${query}
+//
+//	${url} is replaced with the current request URL, escaped as a query parameter. Example: https://www.example.com/login?then=${url}
+//	${query} is replaced with the current request query, unescaped. Example: https://www.example.com/sso/oauth/authorize?${query}
 func NewRedirector(baseRequestURL *url.URL, redirectURL string) oauthhandlers.AuthenticationRedirector {
 	return &redirector{BaseRequestURL: baseRequestURL, RedirectURL: redirectURL}
 }
@@ -21,8 +22,9 @@ func NewRedirector(baseRequestURL *url.URL, redirectURL string) oauthhandlers.Au
 // NewChallenger returns an oauthhandlers.AuthenticationChallenger that returns a Location header to the specified redirectURL.
 // Request URLs missing scheme/host, or with relative paths are resolved relative to the baseRequestURL, if specified.
 // The following tokens are replaceable in the query of the redirectURL:
-//   ${url} is replaced with the current request URL, escaped as a query parameter. Example: https://www.example.com/login?then=${url}
-//   ${query} is replaced with the current request query, unescaped. Example: https://www.example.com/sso/oauth/authorize?${query}
+//
+//	${url} is replaced with the current request URL, escaped as a query parameter. Example: https://www.example.com/login?then=${url}
+//	${query} is replaced with the current request query, unescaped. Example: https://www.example.com/sso/oauth/authorize?${query}
 func NewChallenger(baseRequestURL *url.URL, redirectURL string) oauthhandlers.AuthenticationChallenger {
 	return &redirector{BaseRequestURL: baseRequestURL, RedirectURL: redirectURL}
 }
