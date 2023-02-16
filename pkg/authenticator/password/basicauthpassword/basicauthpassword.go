@@ -19,12 +19,17 @@ import (
 // Authenticator uses basic auth to make a request to a JSON-returning URL.
 // A 401 status indicate failed auth.
 // A non-200 status or the presence of an "error" key with a non-empty
-//   value indicates an error:
-//   {"error":"Error message"}
+//
+//	value indicates an error:
+//	{"error":"Error message"}
+//
 // A 200 status with an "id" key indicates success:
-//   {"id":"userid"}
+//
+//	{"id":"userid"}
+//
 // A successful response may also include name and/or email:
-//   {"id":"userid", "name": "User Name", "email":"user@example.com"}
+//
+//	{"id":"userid", "name": "User Name", "email":"user@example.com"}
 type Authenticator struct {
 	providerName string
 	url          string
