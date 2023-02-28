@@ -180,7 +180,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	accessReq := h.client.NewAccessRequest(osincli.AUTHORIZATION_CODE, authData)
 	accessData, err := accessReq.GetToken()
 	if err != nil {
-		klog.V(2).Infof("Error getting access token from an external OIDC provider (%s): %v", accessReq.GetTokenUrl(), err)
+		klog.V(2).Infof("Error getting access token from an external OIDC provider (%s): %v", sanitizeURL(*accessReq.GetTokenUrl()), err)
 		h.handleError(err, w, req)
 		return
 	}
