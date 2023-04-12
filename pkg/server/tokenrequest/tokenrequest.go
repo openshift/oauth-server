@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/RangelReale/osincli"
+	"github.com/openshift/osincli"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"

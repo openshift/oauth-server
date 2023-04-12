@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/RangelReale/osincli"
+	"github.com/openshift/osincli"
 	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/util/sets"

@@ -10,9 +10,6 @@ github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 ## explicit
 github.com/PuerkitoBio/urlesc
-# github.com/RangelReale/osincli v0.0.0 => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
-## explicit
-github.com/RangelReale/osincli
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
@@ -213,6 +210,9 @@ github.com/openshift/library-go/pkg/serviceability
 # github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
 ## explicit
 github.com/openshift/osin
+# github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
+## explicit
+github.com/openshift/osincli
 # github.com/pborman/uuid v1.2.0
 ## explicit
 github.com/pborman/uuid
@@ -1118,6 +1118,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/RangelReale/osin => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
-# github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 # k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20220602113045-0ae2a4712dab
