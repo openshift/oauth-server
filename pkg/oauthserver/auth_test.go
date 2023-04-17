@@ -28,7 +28,7 @@ func TestWithOAuth(t *testing.T) {
 					authorizeURL,
 					nil,
 				)
-				req = req.WithContext(kaudit.WithAuditAnnotations(req.Context()))
+				req = req.WithContext(kaudit.WithAuditContext(req.Context()))
 
 				withAuth(req, "kubeadmin", testPassword)
 				return req
@@ -46,7 +46,7 @@ func TestWithOAuth(t *testing.T) {
 					authorizeURL,
 					nil,
 				)
-				req = req.WithContext(kaudit.WithAuditAnnotations(req.Context()))
+				req = req.WithContext(kaudit.WithAuditContext(req.Context()))
 
 				return req
 			}(),
@@ -63,7 +63,7 @@ func TestWithOAuth(t *testing.T) {
 					authorizeURL,
 					nil,
 				)
-				req = req.WithContext(kaudit.WithAuditAnnotations(req.Context()))
+				req = req.WithContext(kaudit.WithAuditContext(req.Context()))
 
 				withAuth(req, "kubeadmin", "random-non-sense-non-sense")
 				return req

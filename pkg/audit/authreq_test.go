@@ -24,7 +24,7 @@ func mustShallowRequestWithAnnotations(t *testing.T) *http.Request {
 		t.Fatal(err)
 	}
 
-	return req.WithContext(kaudit.WithAuditAnnotations(req.Context()))
+	return req.WithContext(kaudit.WithAuditContext(req.Context()))
 }
 
 func makeAuthReq(res *authenticator.Response, ok bool, err error) authenticator.Request {

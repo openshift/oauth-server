@@ -107,7 +107,7 @@ func TestRequestHeader(t *testing.T) {
 			t.Fatal(err)
 		}
 		req.Header = testcase.RequestHeaders
-		req = req.WithContext(kaudit.WithAuditAnnotations(req.Context()))
+		req = req.WithContext(kaudit.WithAuditContext(req.Context()))
 
 		authResponse, ok, err := auth.AuthenticateRequest(req)
 		if testcase.ExpectedUsername == "" {
