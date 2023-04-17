@@ -29,7 +29,7 @@ func TestAuthenticator(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		httpReq = httpReq.WithContext(kaudit.WithAuditAnnotations(httpReq.Context()))
+		httpReq = httpReq.WithContext(kaudit.WithAuditContext(httpReq.Context()))
 		req := &osin.AccessRequest{
 			Type:        requestType,
 			HttpRequest: httpReq,

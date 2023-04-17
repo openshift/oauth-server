@@ -43,7 +43,7 @@ func TestAuthenticateRequestValid(t *testing.T) {
 	authRequestHandler := NewBasicAuthAuthentication("example", passwordAuthenticator, true)
 	req, _ := http.NewRequest("GET", "http://example.org", nil)
 	req.SetBasicAuth(Username, Password)
-	req = req.WithContext(kaudit.WithAuditAnnotations(req.Context()))
+	req = req.WithContext(kaudit.WithAuditContext(req.Context()))
 
 	_, _, _ = authRequestHandler.AuthenticateRequest(req)
 	if passwordAuthenticator.passedUser != Username {
