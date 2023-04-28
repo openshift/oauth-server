@@ -139,7 +139,7 @@ func TestHandlerLogin(t *testing.T) {
 				}
 
 				req := httptest.NewRequest(http.MethodPost, "https://auth.example.com/callback", nil)
-				req = req.WithContext(audit.WithAuditAnnotations(req.Context()))
+				req = req.WithContext(audit.WithAuditContext(req.Context()))
 
 				h.login(httptest.NewRecorder(), req, nil, "state")
 
