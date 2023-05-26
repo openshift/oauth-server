@@ -236,8 +236,8 @@ github.com/openshift/library-go/pkg/oauth/usercache
 github.com/openshift/library-go/pkg/security/ldapclient
 github.com/openshift/library-go/pkg/security/ldaputil
 github.com/openshift/library-go/pkg/serviceability
-# github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
-## explicit
+# github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
+## explicit; go 1.15
 github.com/openshift/osin
 # github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 ## explicit

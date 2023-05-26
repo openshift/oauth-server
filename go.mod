@@ -11,7 +11,7 @@ require (
 	github.com/openshift/build-machinery-go v0.0.0-20220913142420-e25cf57ea46d
 	github.com/openshift/client-go v0.0.0-20230120202327-72f107311084
 	github.com/openshift/library-go v0.0.0-20230411150541-a704a5774e20
-	github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
+	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/pflag v1.0.5

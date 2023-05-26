@@ -8,7 +8,7 @@ import (
 
 	"k8s.io/apiserver/pkg/authentication/user"
 
-	"github.com/openshift/oauth-server/pkg"
+	oauthserver "github.com/openshift/oauth-server/pkg"
 	"github.com/openshift/oauth-server/pkg/server/redirect"
 	"github.com/openshift/oauth-server/pkg/server/session"
 )
@@ -62,5 +62,6 @@ func (l *logout) isValidRedirect(then string) bool {
 		return true
 	}
 
-	return osin.ValidateUri(l.redirect, then) == nil
+	_, err := osin.ValidateUri(l.redirect, then)
+	return err == nil
 }
