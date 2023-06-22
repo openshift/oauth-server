@@ -145,10 +145,11 @@ type redirectGrant struct {
 
 // NewRedirectGrant returns a grant handler that redirects to the given subpath when a grant is needed.
 // The following query parameters are added to the URL:
-//   then - original request URL
-//   client_id - requesting client's ID
-//   scopes - grant scope requested
-//   redirect_uri - original authorize request redirect_uri
+//
+//	then - original request URL
+//	client_id - requesting client's ID
+//	scopes - grant scope requested
+//	redirect_uri - original authorize request redirect_uri
 func NewRedirectGrant(subpath string) GrantHandler {
 	return &redirectGrant{subpath}
 }
