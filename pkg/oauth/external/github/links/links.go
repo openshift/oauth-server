@@ -4,8 +4,9 @@ import "regexp"
 
 // Matches URL+rel links defined by https://tools.ietf.org/html/rfc5988
 // Examples header values:
-//   <http://www.example.com/foo?page=3>; rel="next"
-//   <http://www.example.com/foo?page=3>; rel="next", <http://www.example.com/foo?page=1>; rel="prev"
+//
+//	<http://www.example.com/foo?page=3>; rel="next"
+//	<http://www.example.com/foo?page=3>; rel="next", <http://www.example.com/foo?page=1>; rel="prev"
 var linkRegex = regexp.MustCompile(`\<(.+?)\>\s*;\s*rel="(.+?)"(?:\s*,\s*)?`)
 
 // ParseLinks extracts link relations from the given header value.
