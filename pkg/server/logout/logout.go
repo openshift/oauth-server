@@ -61,6 +61,6 @@ func (l *logout) isValidRedirect(then string) bool {
 	if redirect.IsServerRelativeURL(then) {
 		return true
 	}
-
-	return osin.ValidateUri(l.redirect, then) == nil
+	_, err := osin.ValidateUri(l.redirect, then)
+	return err == nil
 }
