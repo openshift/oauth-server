@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
@@ -15,7 +14,6 @@ import (
 	auditapi "k8s.io/apiserver/pkg/apis/audit"
 	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/authentication/user"
-	"k8s.io/apiserver/pkg/authorization/authorizer"
 )
 
 func TestHandler(t *testing.T) {
@@ -143,11 +141,7 @@ func TestHandlerLogin(t *testing.T) {
 
 				h.login(httptest.NewRecorder(), req, nil, "state")
 
-				ev, err := audit.NewEventFromRequest(req, time.Time{}, "Request", authorizer.AttributesRecord{})
-				if err != nil {
-					t.Fatalf("unexpected error in retrieving the audit events: %v", err)
-				}
-
+				ev := audit.AuditEventFrom(req.Context())
 				for _, check := range tc.checks {
 					if err := check(ev, *authHandler, identityMapper); err != nil {
 						t.Error(err)

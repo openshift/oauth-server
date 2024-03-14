@@ -6,15 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/openshift/oauth-server/pkg/audit"
 
-	apiaudit "k8s.io/apiserver/pkg/apis/audit"
 	kaudit "k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
-	"k8s.io/apiserver/pkg/authorization/authorizer"
 )
 
 const (
@@ -186,15 +183,7 @@ func TestGetBasicAuthInfoNotCredentials(t *testing.T) {
 }
 
 func verifyAnnotations(t *testing.T, req *http.Request, want string) error {
-	ev, err := kaudit.NewEventFromRequest(
-		req, time.Now(),
-		apiaudit.LevelRequestResponse,
-		&authorizer.AttributesRecord{},
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	ev := kaudit.AuditEventFrom(req.Context())
 
 	if len(ev.Annotations) == 0 {
 		return errors.New("ev.Annotations is empty")
