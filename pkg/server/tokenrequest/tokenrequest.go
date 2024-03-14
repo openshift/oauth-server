@@ -230,13 +230,16 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
   {{ .Error }}
 {{ else }}
   <h2>Your API token is</h2>
-  <code>{{.AccessToken}}</code>
+  <code id="token-string">{{.AccessToken}}</code>
+  <button id="token-string-copy" onclick="const text = document.getElementById('token-string').textContent; navigator.clipboard.writeText(text); document.getElementById('token-string-copy').textContent = 'Copied';" title="Copy to clipboard">Copy</button>
 
   <h2>Log in with this token</h2>
-  <pre>oc login <span class="nowrap">--token={{.AccessToken}}</span> <span class="nowrap">--server={{.PublicMasterURL}}</span></pre>
+  <pre id="token-oc">oc login <span class="nowrap">--token={{.AccessToken}}</span> <span class="nowrap">--server={{.PublicMasterURL}}</span></pre>
+  <button id="token-oc-copy" onclick="const text = document.getElementById('token-oc').textContent; navigator.clipboard.writeText(text); document.getElementById('token-oc-copy').textContent = 'Copied';" title="Copy to clipboard">Copy</button>
 
   <h3>Use this token directly against the API</h3>
-  <pre>curl <span class="nowrap">-H "Authorization: Bearer {{.AccessToken}}"</span> <span class="nowrap">"{{.PublicMasterURL}}/apis/user.openshift.io/v1/users/~"</span></pre>
+  <pre id="token-api">curl <span class="nowrap">-H "Authorization: Bearer {{.AccessToken}}"</span> <span class="nowrap">"{{.PublicMasterURL}}/apis/user.openshift.io/v1/users/~"</span></pre>
+  <button id="token-api-copy" onclick="const text = document.getElementById('token-api').textContent; navigator.clipboard.writeText(text); document.getElementById('token-api-copy').textContent = 'Copied';" title="Copy to clipboard">Copy</button>
 {{ end }}
 
 <br><br>
