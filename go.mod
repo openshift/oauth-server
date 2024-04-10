@@ -3,7 +3,6 @@ module github.com/openshift/oauth-server
 go 1.19
 
 require (
-	github.com/RangelReale/osincli v0.0.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-ldap/ldap/v3 v3.4.3
 	github.com/gophercloud/gophercloud v0.24.0
@@ -12,7 +11,8 @@ require (
 	github.com/openshift/build-machinery-go v0.0.0-20220720161851-9b4f0386f6b0
 	github.com/openshift/client-go v0.0.0-20220831193253-4950ae70c8ea
 	github.com/openshift/library-go v0.0.0-20230502133115-201a09f8bb93
-	github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
+	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
+	github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.1
@@ -113,8 +113,4 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
-replace (
-	github.com/RangelReale/osin => github.com/openshift/osin v1.0.1-0.20180202150137-2dc1b4316769
-	github.com/RangelReale/osincli => github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
-	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20221007080208-eb103c661ea4 // points to openshift-apiserver-4.12-kubernetes-1.25.0
-)
+replace k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20221007080208-eb103c661ea4 // points to openshift-apiserver-4.12-kubernetes-1.25.0
