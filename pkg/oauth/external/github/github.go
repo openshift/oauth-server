@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/RangelReale/osincli"
+	"github.com/openshift/osincli"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/oauth-server/pkg/api"
