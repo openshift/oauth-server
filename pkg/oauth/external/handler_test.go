@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RangelReale/osincli"
 	"github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/oauth/handlers"
 	"github.com/openshift/oauth-server/pkg/server/csrf"
+	"github.com/openshift/osincli"
 	auditapi "k8s.io/apiserver/pkg/apis/audit"
 	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/authentication/user"

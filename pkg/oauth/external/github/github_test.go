@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/RangelReale/osincli"
 	"github.com/openshift/oauth-server/pkg/api"
+	"github.com/openshift/osincli"
 )
 
 func TestGetUserIdentity(t *testing.T) {
