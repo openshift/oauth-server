@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/openshift/osin"
-	"gopkg.in/square/go-jose.v2/jwt"
 
 	tokenreviewv1 "k8s.io/api/authentication/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
