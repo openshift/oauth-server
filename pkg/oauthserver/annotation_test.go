@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"time"
 
-	apiaudit "k8s.io/apiserver/pkg/apis/audit"
 	kaudit "k8s.io/apiserver/pkg/audit"
-	"k8s.io/apiserver/pkg/authorization/authorizer"
 
 	"github.com/openshift/oauth-server/pkg/audit"
 )
@@ -42,14 +39,7 @@ func withUsernameAnnotation(want string) func(*testing.T, map[string]string) {
 type annotationChecker func(*testing.T, map[string]string)
 
 func verifyAnnotations(t *testing.T, req *http.Request, checker []annotationChecker) {
-	ev, err := kaudit.NewEventFromRequest(
-		req, time.Now(),
-		apiaudit.LevelRequestResponse,
-		&authorizer.AttributesRecord{},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ev := kaudit.AuditEventFrom(req.Context())
 
 	if len(ev.Annotations) == 0 {
 		t.Error(errors.New("ev.Annotations is empty"))
