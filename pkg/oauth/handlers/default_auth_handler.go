@@ -115,7 +115,7 @@ func (authHandler *unionAuthenticationHandler) AuthenticationNeeded(apiClient au
 			default:
 				w.WriteHeader(http.StatusUnauthorized)
 				ev := audit.AuditEventFrom(req.Context())
-				if ev != nil {
+				if ev != nil && ev.ResponseStatus != nil {
 					// this code mimics the bits from k8s.io/apiserver/pkg/endpoints/filters/authn_audit.go
 					// but since we don't accept failedHander here we need to manually alter the audit
 					// event with information about failed authentication
