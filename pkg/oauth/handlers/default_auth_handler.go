@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apiserver/pkg/audit"
 
@@ -116,6 +117,10 @@ func (authHandler *unionAuthenticationHandler) AuthenticationNeeded(apiClient au
 				w.WriteHeader(http.StatusUnauthorized)
 				ev := audit.AuditEventFrom(req.Context())
 				if ev != nil {
+					if ev.ResponseStatus == nil {
+						ev.ResponseStatus = &metav1.Status{}
+					}
+
 					// this code mimics the bits from k8s.io/apiserver/pkg/endpoints/filters/authn_audit.go
 					// but since we don't accept failedHander here we need to manually alter the audit
 					// event with information about failed authentication
