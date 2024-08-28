@@ -1,9 +1,7 @@
 reviewers:
-  - stlaz
+  - ibihim
+  - liouk
 approvers:
   - deads2k
-  - mfojtik
-  - smarterclayton
-  - stlaz
-  - sttts
+  - ibihim
 component: apiserver-auth
