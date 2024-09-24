@@ -9,6 +9,8 @@ type Localization map[string]string
 
 var supportedLocalizations = map[string]Localization{
 	language.English.String():  locale_en,
+	language.Spanish.String():  locale_es,
+	language.French.String():   locale_fr,
 	language.Chinese.String():  locale_zh,
 	language.Japanese.String(): locale_ja,
 	language.Korean.String():   locale_ko,
@@ -36,6 +38,8 @@ func getPreferredLang(acceptLangHeader string) string {
 
 var supportedLangs = []language.Tag{
 	language.English,  // en - first language is fallback
+	language.Spanish,  // es
+	language.French,   // fr
 	language.Chinese,  // zh
 	language.Japanese, // ja
 	language.Korean,   // ko
@@ -52,6 +56,32 @@ var locale_en = Localization{
 	"LoginIsRequiredPleaseTryAgain":        "Login is required. Please try again.",
 	"CouldNotCheckCSRFTokenPleaseTryAgain": "Could not check CSRF token. Please try again.",
 	"InvalidLoginOrPasswordPleaseTryAgain": "Invalid login or password. Please try again.",
+}
+
+var locale_es = Localization{
+	"LogInToYourAccount":                   "Connectez-vous à votre compte",
+	"Username":                             "Nom d'utilisateur",
+	"Password":                             "Mot de passe",
+	"LogIn":                                "Se connecter",
+	"WelcomeTo":                            "Bienvenue à",
+	"LogInWith":                            "Connectez-vous avec",
+	"Error":                                "Erreur",
+	"LoginIsRequiredPleaseTryAgain":        "La connexion est requise. Veuillez réessayer.",
+	"CouldNotCheckCSRFTokenPleaseTryAgain": "Impossible de vérifier le jeton CSRF. Veuillez réessayer.",
+	"InvalidLoginOrPasswordPleaseTryAgain": "Identifiant ou mot de passe invalide. Veuillez réessayer.",
+}
+
+var locale_fr = Localization{
+	"LogInToYourAccount":                   "Inicia sesión en tu cuenta",
+	"Username":                             "Nombre de usuario",
+	"Password":                             "Contraseña",
+	"LogIn":                                "Iniciar sesión",
+	"WelcomeTo":                            "Bienvenido a",
+	"LogInWith":                            "Inicia sesión con",
+	"Error":                                "Error",
+	"LoginIsRequiredPleaseTryAgain":        "Se requiere iniciar sesión. Por favor, inténtalo de nuevo.",
+	"CouldNotCheckCSRFTokenPleaseTryAgain": "No se pudo verificar el token CSRF. Por favor, inténtalo de nuevo.",
+	"InvalidLoginOrPasswordPleaseTryAgain": "Usuario o contraseña inválidos. Por favor, inténtalo de nuevo.",
 }
 
 var locale_zh = Localization{
