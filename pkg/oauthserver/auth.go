@@ -353,9 +353,9 @@ func (c *OAuthServerConfig) getAuthenticationHandler(mux oauthserver.Mux, errorH
 					// If there is more than one Identity Provider acting as a login
 					// provider, we need to give each of them their own login path,
 					// to avoid ambiguity.
-					loginPath = path.Join(openShiftLoginPrefix, identityProvider.Name)
-					// url-encode the provider name for redirecting
-					redirectLoginPath = path.Join(openShiftLoginPrefix, (&url.URL{Path: identityProvider.Name}).String())
+					sanitizedPath := path.Join(openShiftLoginPrefix, url.PathEscape(identityProvider.Name))
+					loginPath = sanitizedPath
+					redirectLoginPath = sanitizedPath
 				}
 
 				// Since we're redirecting to a local login page, we don't need to force absolute URL resolution
