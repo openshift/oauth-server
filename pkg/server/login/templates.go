@@ -235,6 +235,29 @@ select.pf-c-form-control.pf-m-success { --pf-c-form-control--PaddingRight: var(-
 .pf-c-title.pf-m-3xl { font-size: 28px; line-height: 36.4px; }
 
     </style>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Disable the submit button initially
+        const submitButton = document.getElementById("loginButton");
+        submitButton.disabled = true;
+        // Function to check form fields and enable button if valid
+        const checkFormValidity = () => {
+          const username = document.getElementById("inputUsername").value;
+          const password = document.getElementById("inputPassword").value;
+
+          // Enable the button only if both fields are filled
+          submitButton.disabled = !(username && password);
+        };
+        // Add event listeners to input fields
+        document.getElementById("inputUsername").addEventListener("input", checkFormValidity);
+        document.getElementById("inputPassword").addEventListener("input", checkFormValidity);
+      });
+      // This function re-enables the submit button in case of an error
+      function handleError() {
+        const submitButton = document.getElementById("loginButton");
+        submitButton.disabled = false; // Re-enable the button on error
+      }
+    </script>
   </head>
 
   <body class="pf-m-redhat-font">
@@ -259,6 +282,7 @@ select.pf-c-form-control.pf-m-success { --pf-c-form-control--PaddingRight: var(-
                     <path d="M504 256c0 136.997-111.043 248-248 248S8 392.997 8 256C8 119.083 119.043 8 256 8s248 111.083 248 248zm-248 50c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z" transform=""></path>
                   </svg>
                   {{ .Error }}
+                  <script>handleError();</script>
                 </p>
                 {{ end }}
               </div>
@@ -277,7 +301,7 @@ select.pf-c-form-control.pf-m-success { --pf-c-form-control--PaddingRight: var(-
                 <input type="password" class="pf-c-form-control" id="inputPassword" placeholder="" tabindex="2" type="password" name="{{ .Names.Password }}" value="">
               </div>
               <div class="pf-c-form__group pf-m-action">
-                <button class="pf-c-button pf-m-primary pf-m-block" type="submit" tabindex="3">{{ .Locale.LogIn }}</button>
+                <button class="pf-c-button pf-m-primary pf-m-block" id="loginButton" type="submit" tabindex="3">{{ .Locale.LogIn }}</button>
               </div>
             </form>
           </div>
