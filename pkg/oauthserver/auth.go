@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/openshift/osin"
 	"github.com/openshift/osincli"
@@ -353,7 +354,7 @@ func (c *OAuthServerConfig) getAuthenticationHandler(mux oauthserver.Mux, errorH
 					// If there is more than one Identity Provider acting as a login
 					// provider, we need to give each of them their own login path,
 					// to avoid ambiguity.
-					loginPath = path.Join(openShiftLoginPrefix, identityProvider.Name)
+					loginPath = path.Join(openShiftLoginPrefix, strings.ReplaceAll(identityProvider.Name, " ", "%20"))
 					// url-encode the provider name for redirecting
 					redirectLoginPath = path.Join(openShiftLoginPrefix, (&url.URL{Path: identityProvider.Name}).String())
 				}
