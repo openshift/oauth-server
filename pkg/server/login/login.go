@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strings"
 
 	"k8s.io/klog/v2"
 
@@ -92,7 +93,7 @@ func NewLogin(provider string, csrf csrf.CSRF, auth PasswordAuthenticator, rende
 }
 
 func (l *Login) Install(mux oauthserver.Mux, prefix string) {
-	mux.Handle(prefix, l)
+	mux.Handle(strings.ReplaceAll(prefix, " ", "%20"), l)
 }
 
 func (l *Login) ServeHTTP(w http.ResponseWriter, req *http.Request) {
