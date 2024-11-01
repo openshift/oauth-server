@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -124,6 +125,175 @@ func TestWithOAuth_loginProviders(t *testing.T) {
 		},
 	}
 
+	for _, tt := range []struct {
+		name                 string
+		providers            []osinv1.IdentityProvider
+		clientPathEscapeFunc func(string) string
+	}{
+		{
+			name: "single login provider",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp-no-spaces"),
+			},
+		},
+		{
+			name: "single login provider with spaces in name",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp with spaces"),
+			},
+		},
+		{
+			name: "single oauth provider",
+			providers: []osinv1.IdentityProvider{
+				newOAuthProvider("idp-no-spaces"),
+			},
+		},
+		{
+			name: "single oauth provider with spaces in name",
+			providers: []osinv1.IdentityProvider{
+				newOAuthProvider("idp with spaces"),
+			},
+		},
+		{
+			name: "multiple login providers",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp-no-spaces"),
+				newLoginProvider("idp-no-spaces-2"),
+			},
+		},
+		{
+			name: "multiple login providers with spaces in name",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp-no-spaces"),
+				newLoginProvider("idp with spaces"),
+			},
+		},
+		{
+			name: "multiple login providers with spaces in name and escaped in client",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp-no-spaces"),
+				newLoginProvider("idp with spaces"),
+			},
+			clientPathEscapeFunc: func(path string) string {
+				return strings.ReplaceAll(path, " ", "%20")
+			},
+		},
+		{
+			name: "multiple login providers with %20 in name",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp-no-spaces"),
+				newLoginProvider("idp%20with%20spaces"),
+			},
+		},
+		{
+			name: "multiple oauth providers",
+			providers: []osinv1.IdentityProvider{
+				newOAuthProvider("idp-no-spaces"),
+				newOAuthProvider("idp-no-spaces-2"),
+			},
+		},
+		{
+			name: "multiple oauth providers with spaces in name",
+			providers: []osinv1.IdentityProvider{
+				newOAuthProvider("idp-no-spaces"),
+				newOAuthProvider("idp with spaces"),
+			},
+		},
+		{
+			name: "multiple oauth providers with spaces in name and escaped in client",
+			providers: []osinv1.IdentityProvider{
+				newOAuthProvider("idp-no-spaces"),
+				newOAuthProvider("idp with spaces"),
+			},
+			clientPathEscapeFunc: func(path string) string {
+				return strings.ReplaceAll(path, " ", "%20")
+			},
+		},
+		{
+			name: "multiple oauth providers with %20 in name",
+			providers: []osinv1.IdentityProvider{
+				newOAuthProvider("idp-no-spaces"),
+				newOAuthProvider("idp%20with%20spaces"),
+			},
+		},
+		{
+			name: "one login and one oauth provider without spaces",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp-login"),
+				newOAuthProvider("idp-oauth"),
+			},
+		},
+		{
+			name: "one login and one oauth provider with spaces",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp login"),
+				newOAuthProvider("idp oauth"),
+			},
+		},
+		{
+			name: "multiple login and multiple oauth provider without spaces",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp-login1"),
+				newLoginProvider("idp-login2"),
+				newOAuthProvider("idp-oauth1"),
+				newOAuthProvider("idp-oauth2"),
+			},
+		},
+		{
+			name: "multiple login and multiple oauth provider with spaces",
+			providers: []osinv1.IdentityProvider{
+				newLoginProvider("idp login 1"),
+				newLoginProvider("idp login 2"),
+				newOAuthProvider("idp oauth 1"),
+				newOAuthProvider("idp oauth 2"),
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			oauthServerConfig.ExtraOAuthConfig.Options = osinv1.OAuthConfig{
+				IdentityProviders: tt.providers,
+				GrantConfig: osinv1.GrantConfig{
+					Method: osinv1.GrantHandlerAuto,
+				},
+			}
+
+			h, err := oauthServerConfig.WithOAuth(http.NewServeMux())
+			if err != nil {
+				t.Errorf("got error while not expecting one: %v", err)
+			}
+
+			cntLoginProviders := 0
+			for _, p := range tt.providers {
+				if p.UseAsLogin {
+					cntLoginProviders += 1
+				}
+			}
+
+			for _, p := range tt.providers {
+				if p.UseAsLogin {
+					loginPath := "/login"
+					if cntLoginProviders > 1 {
+						loginPath += "/" + p.Name
+					}
+
+					if tt.clientPathEscapeFunc != nil {
+						loginPath = tt.clientPathEscapeFunc(loginPath)
+					}
+
+					callLogin(t, &p, h, loginPath)
+
+				} else if p.UseAsChallenger {
+					callChallenger(t, &p, h)
+
+				} else {
+					t.Fatalf("provider '%s' neither login nor challenger", p.Name)
+				}
+			}
+		})
+	}
+}
+
+func callLogin(t *testing.T, p *osinv1.IdentityProvider, h http.Handler, loginPath string) {
 	expectMethodStatus := map[string]int{
 		http.MethodGet:     http.StatusFound,
 		http.MethodPost:    http.StatusFound,
@@ -136,101 +306,57 @@ func TestWithOAuth_loginProviders(t *testing.T) {
 		http.MethodTrace:   http.StatusMethodNotAllowed,
 	}
 
-	for _, tt := range []struct {
-		name                 string
-		providers            []osinv1.IdentityProvider
-		clientPathEscapeFunc func(string) string
-	}{
-		{
-			name: "single login provider",
-			providers: []osinv1.IdentityProvider{
-				newProvider("idp-no-spaces"),
-			},
-		},
-		{
-			name: "single login provider with spaces in name",
-			providers: []osinv1.IdentityProvider{
-				newProvider("idp with spaces"),
-			},
-		},
-		{
-			name: "multiple login providers",
-			providers: []osinv1.IdentityProvider{
-				newProvider("idp-no-spaces"),
-				newProvider("idp-no-spaces-2"),
-			},
-		},
-		{
-			name: "multiple login providers with spaces in name",
-			providers: []osinv1.IdentityProvider{
-				newProvider("idp-no-spaces"),
-				newProvider("idp with spaces"),
-			},
-		},
-		{
-			name: "multiple login providers with spaces in name and escaped in client",
-			providers: []osinv1.IdentityProvider{
-				newProvider("idp-no-spaces"),
-				newProvider("idp with spaces"),
-			},
-			clientPathEscapeFunc: func(path string) string {
-				return strings.ReplaceAll(path, " ", "%20")
-			},
-		},
-		{
-			name: "multiple login providers with %20 in name",
-			providers: []osinv1.IdentityProvider{
-				newProvider("idp-no-spaces"),
-				newProvider("idp%20with%20spaces"),
-			},
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			oauthServerConfig.ExtraOAuthConfig.Options = osinv1.OAuthConfig{
-				LoginURL:          "/login",
-				IdentityProviders: tt.providers,
-				GrantConfig: osinv1.GrantConfig{
-					Method: osinv1.GrantHandlerAuto,
-				},
-			}
+	for method, expectedStatus := range expectMethodStatus {
+		t.Logf("sending '%s %s' to provider '%s'", method, loginPath, p.Name)
+		rec := httptest.NewRecorder()
+		req, err := http.NewRequest(method, loginPath, nil)
+		if err != nil {
+			t.Fatalf("error while creating request: %v", err)
+		}
 
-			h, err := oauthServerConfig.WithOAuth(http.NewServeMux())
-			if err != nil {
-				t.Errorf("got error while not expecting one: %v", err)
-			}
+		h.ServeHTTP(rec, req)
+		res := rec.Result()
 
-			for _, p := range tt.providers {
-				loginPath := "/login"
-				if len(tt.providers) > 1 {
-					loginPath += "/" + p.Name
-				}
-
-				for method, expectedStatus := range expectMethodStatus {
-					path := loginPath
-					if tt.clientPathEscapeFunc != nil {
-						path = tt.clientPathEscapeFunc(path)
-					}
-
-					t.Logf("sending '%s %s' to provider '%s'", method, path, p.Name)
-					rec := httptest.NewRecorder()
-					req, err := http.NewRequest(method, path, nil)
-					if err != nil {
-						t.Fatalf("error while creating request: %v", err)
-					}
-
-					h.ServeHTTP(rec, req)
-					res := rec.Result()
-
-					if expectedStatus != res.StatusCode {
-						t.Errorf("expected HTTP status [%d %s]; got [%s]", expectedStatus, http.StatusText(expectedStatus), res.Status)
-					}
-				}
-			}
-		})
+		if expectedStatus != res.StatusCode {
+			t.Errorf("expected HTTP status [%d %s]; got [%s]", expectedStatus, http.StatusText(expectedStatus), res.Status)
+		}
 	}
 }
 
-func newProvider(name string) osinv1.IdentityProvider {
+func callChallenger(t *testing.T, p *osinv1.IdentityProvider, h http.Handler) {
+	// we expect a 500 because this won't be a valid oauth request; but this is
+	// enough to validate that the handler was set up correctly
+	expectedStatus := http.StatusInternalServerError
+	path := path.Join("/oauth2callback", p.Name)
+
+	for _, method := range []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodHead,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodConnect,
+		http.MethodOptions,
+		http.MethodTrace,
+	} {
+		t.Logf("sending '%s %s' to provider '%s'", method, path, p.Name)
+		rec := httptest.NewRecorder()
+		req, err := http.NewRequest(method, path, nil)
+		if err != nil {
+			t.Fatalf("error while creating request: %v", err)
+		}
+
+		h.ServeHTTP(rec, req)
+		res := rec.Result()
+
+		if expectedStatus != res.StatusCode {
+			t.Errorf("expected HTTP status [%d %s]; got [%s]", expectedStatus, http.StatusText(expectedStatus), res.Status)
+		}
+	}
+}
+
+func newLoginProvider(name string) osinv1.IdentityProvider {
 	return osinv1.IdentityProvider{
 		Name:          name,
 		UseAsLogin:    true,
@@ -239,6 +365,29 @@ func newProvider(name string) osinv1.IdentityProvider {
 			Object: &osinv1.BasicAuthPasswordIdentityProvider{
 				RemoteConnectionInfo: configv1.RemoteConnectionInfo{
 					URL: fmt.Sprintf("https://%s.com", name),
+				},
+			},
+		},
+	}
+}
+
+func newOAuthProvider(name string) osinv1.IdentityProvider {
+	return osinv1.IdentityProvider{
+		Name:            name,
+		UseAsChallenger: true,
+		MappingMethod:   string(identitymapper.MappingMethodClaim),
+		Provider: runtime.RawExtension{
+			Object: &osinv1.OpenIDIdentityProvider{
+				ClientID: "client-id",
+				ClientSecret: configv1.StringSource{StringSourceSpec: configv1.StringSourceSpec{
+					Value: "client-secret",
+				}},
+				URLs: osinv1.OpenIDURLs{
+					Authorize: "https://provider.com/authorize",
+					Token:     "https://provider.com/token",
+				},
+				Claims: osinv1.OpenIDClaims{
+					ID: []string{"id-claim"},
 				},
 			},
 		},
