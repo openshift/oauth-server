@@ -398,7 +398,7 @@ func (c *OAuthServerConfig) getAuthenticationHandler(mux oauthserver.Mux, errorH
 			// If the specified errorHandler doesn't handle the login error, let the state error handler attempt to propagate specific errors back to the token requester
 			oauthErrorHandler := handlers.AuthenticationErrorHandlers{errorHandler, state}
 
-			callbackPath := path.Join(openShiftOAuthCallbackPrefix, identityProvider.Name)
+			callbackPath := path.Join(openShiftOAuthCallbackPrefix, strings.ReplaceAll(identityProvider.Name, " ", "%20"))
 			oauthRedirector, oauthHandler, err := external.NewExternalOAuthRedirector(oauthProvider, state, c.ExtraOAuthConfig.Options.MasterPublicURL+callbackPath, oauthSuccessHandler, oauthErrorHandler, identityMapper)
 			if err != nil {
 				return nil, fmt.Errorf("unexpected error: %v", err)
