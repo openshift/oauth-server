@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
-	tokens3 "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens"
+	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
+	tokens3 "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens"
 	"k8s.io/klog/v2"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -41,7 +41,7 @@ func New(providerName string, url string, transport http.RoundTripper, domainNam
 }
 
 // Authenticate user and return his Keystone ID
-func getUserIDv3(client *gophercloud.ProviderClient, options tokens3.AuthOptionsBuilder, eo gophercloud.EndpointOpts) (string, error) {
+func getUserIDv3(ctx context.Context, client *gophercloud.ProviderClient, options tokens3.AuthOptionsBuilder, eo gophercloud.EndpointOpts) (string, error) {
 	// Override the generated service endpoint with the one returned by the version endpoint.
 	v3Client, err := openstack.NewIdentityV3(client, eo)
 	if err != nil {
@@ -49,7 +49,7 @@ func getUserIDv3(client *gophercloud.ProviderClient, options tokens3.AuthOptions
 	}
 
 	// Issue new unscoped token
-	result := tokens3.Create(v3Client, options)
+	result := tokens3.Create(ctx, v3Client, options)
 	if result.Err != nil {
 		return "", result.Err
 	}
@@ -91,10 +91,10 @@ func (a keystonePasswordAuthenticator) AuthenticatePassword(ctx context.Context,
 	}
 
 	client.HTTPClient = *a.client
-	userid, err := getUserIDv3(client, &opts, gophercloud.EndpointOpts{})
+	userid, err := getUserIDv3(ctx, client, &opts, gophercloud.EndpointOpts{})
 
 	if err != nil {
-		if _, ok := err.(gophercloud.ErrDefault401); ok {
+		if gophercloud.ResponseCodeIs(err, http.StatusUnauthorized) {
 			return nil, false, nil
 		}
 		klog.Warningf("Failed: Calling openstack AuthenticateV3: %v", err)
