@@ -18,8 +18,18 @@ func TestLocales(t *testing.T) {
 		},
 		{
 			name:   "Test 'Accept-Language' request header which favours English language",
-			header: "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5",
+			header: "en;q=0.8, de;q=0.7, *;q=0.5",
 			locale: locale_en,
+		},
+		{
+			name:   "Test 'Accept-Language' request header which favours Spanish language",
+			header: "es;q=0.9, en;q=0.8",
+			locale: locale_es,
+		},
+		{
+			name:   "Test 'Accept-Language' request header which favours French language",
+			header: "fr;q=0.9, en;q=0.8",
+			locale: locale_fr,
 		},
 		{
 			name:   "Test 'Accept-Language' request header which favours Japan language",
@@ -38,7 +48,7 @@ func TestLocales(t *testing.T) {
 		},
 		{
 			name:   "Test empty 'Accept-Language' request header which doesn't match any supported languages, so defaults to English language",
-			header: "fr;q=0.5, de;q=0.8",
+			header: "cz;q=0.5, de;q=0.8",
 			locale: locale_en,
 		},
 	}
