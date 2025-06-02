@@ -1,6 +1,9 @@
 package errorpage
 
-import "github.com/openshift/oauth-server/pkg/userregistry/identitymapper"
+import (
+	"github.com/openshift/oauth-server/pkg/server/locales"
+	"github.com/openshift/oauth-server/pkg/userregistry/identitymapper"
+)
 
 const (
 	// error occurred attempting to claim a user
@@ -28,14 +31,14 @@ func AuthenticationErrorCode(err error) string {
 
 // AuthenticationErrorMessage returns an error message for the given authentication error code.
 // If the error code is not recognized, a generic error message is returned.
-func AuthenticationErrorMessage(code string) string {
+func AuthenticationErrorMessage(code string, locale locales.Localization) string {
 	switch code {
 	case errorCodeClaim:
-		return "Could not create user."
+		return locale["CouldNotCreateUser"]
 	case errorCodeLookup:
-		return "Could not find user."
+		return locale["CouldNotFindUser"]
 	default:
-		return "An authentication error occurred."
+		return locale["AnAuthenticationErrorOccurred"]
 	}
 }
 
@@ -47,6 +50,6 @@ func GrantErrorCode(err error) string {
 
 // GrantErrorMessage returns an error message for the given grant error code.
 // If the error is not recognized, a generic error message is returned.
-func GrantErrorMessage(code string) string {
-	return "A grant error occurred."
+func GrantErrorMessage(code string, locale locales.Localization) string {
+	return locale["GrantErrorOccurred"]
 }
