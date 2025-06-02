@@ -30,10 +30,11 @@ func (p *ErrorPage) AuthenticationError(err error, w http.ResponseWriter, req *h
 	if !httprequest.PrefersHTML(req) {
 		return false, err
 	}
+	locale := locales.GetLocale(req.Header.Get("Accept-Language"))
 
 	errorData := ErrorData{}
 	errorData.ErrorCode = AuthenticationErrorCode(err)
-	errorData.Error = AuthenticationErrorMessage(errorData.ErrorCode)
+	errorData.Error = AuthenticationErrorMessage(errorData.ErrorCode, locale)
 
 	p.render.Render(errorData, w, req)
 	return true, nil
@@ -46,9 +47,11 @@ func (p *ErrorPage) GrantError(err error, w http.ResponseWriter, req *http.Reque
 		return false, err
 	}
 
+	locale := locales.GetLocale(req.Header.Get("Accept-Language"))
+
 	errorData := ErrorData{}
 	errorData.ErrorCode = GrantErrorCode(err)
-	errorData.Error = GrantErrorMessage(errorData.ErrorCode)
+	errorData.Error = GrantErrorMessage(errorData.ErrorCode, locale)
 
 	p.render.Render(errorData, w, req)
 	return true, nil
