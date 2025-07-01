@@ -58,7 +58,7 @@ var locale_en = Localization{
 	"InvalidLoginOrPasswordPleaseTryAgain": "Invalid login or password. Please try again.",
 }
 
-var locale_es = Localization{
+var locale_fr = Localization{
 	"LogInToYourAccount":                   "Connectez-vous à votre compte",
 	"Username":                             "Nom d'utilisateur",
 	"Password":                             "Mot de passe",
@@ -71,7 +71,7 @@ var locale_es = Localization{
 	"InvalidLoginOrPasswordPleaseTryAgain": "Identifiant ou mot de passe invalide. Veuillez réessayer.",
 }
 
-var locale_fr = Localization{
+var locale_es = Localization{
 	"LogInToYourAccount":                   "Inicia sesión en tu cuenta",
 	"Username":                             "Nombre de usuario",
 	"Password":                             "Contraseña",
