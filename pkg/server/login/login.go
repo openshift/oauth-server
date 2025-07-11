@@ -137,7 +137,7 @@ func (l *Login) handleLoginForm(w http.ResponseWriter, req *http.Request) {
 		if msg, hasMsg := form.Locale[errorMessages[form.ErrorCode]]; hasMsg {
 			form.Error = msg
 		} else {
-			form.Error = errorpage.AuthenticationErrorMessage(form.ErrorCode)
+			form.Error = errorpage.AuthenticationErrorMessage(form.ErrorCode, form.Locale)
 		}
 	}
 
