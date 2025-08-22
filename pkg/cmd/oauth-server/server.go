@@ -5,8 +5,10 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/openshift/oauth-server/pkg/version"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/component-base/compatibility"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,6 +57,8 @@ func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig, audit *options.Au
 	metav1.AddToGroupVersion(scheme, corev1.SchemeGroupVersion)
 	genericConfig := genericapiserver.NewRecommendedConfig(serializer.NewCodecFactory(scheme))
 
+	genericConfig.EffectiveVersion = compatibility.NewEffectiveVersionFromString(version.Get().String(), "", "")
+
 	servingOptions, err := serving.ToServingOptions(osinConfig.ServingInfo)
 	if err != nil {
 		return nil, err
@@ -100,7 +104,7 @@ func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig, audit *options.Au
 		return nil, err
 	}
 
-	anonymousAuthenticator := anonymous.NewAuthenticator()
+	anonymousAuthenticator := anonymous.NewAuthenticator(nil)
 	genericConfig.Authentication.Authenticator = union.New(
 		genericConfig.Authentication.Authenticator,
 		authenticator.RequestFunc(func(req *http.Request) (*authenticator.Response, bool, error) {

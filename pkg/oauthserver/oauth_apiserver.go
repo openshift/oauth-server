@@ -174,7 +174,7 @@ func NewOAuthServerConfig(oauthConfig osinv1.OAuthConfig, userClientConfig *rest
 
 			postStartHooks: map[string]genericapiserver.PostStartHookFunc{
 				"openshift.io-StartUserInformer": func(ctx genericapiserver.PostStartHookContext) error {
-					go userInformer.Start(ctx.StopCh)
+					go userInformer.Start(ctx.Done())
 					return nil
 				},
 			},
