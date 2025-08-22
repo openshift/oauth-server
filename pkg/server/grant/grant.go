@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
 
 	"k8s.io/klog/v2"
 
@@ -126,7 +127,7 @@ func (l *Grant) handleForm(user user.Info, w http.ResponseWriter, req *http.Requ
 	redirectURI := q.Get(redirectURIParam)
 
 	client, err := l.clientregistry.Get(context.TODO(), clientID, metav1.GetOptions{})
-	if err != nil || client == nil {
+	if err != nil || client == nil || reflect.ValueOf(client).Elem().IsZero() {
 		l.failed("Could not find client for client_id", w, req)
 		return
 	}
@@ -228,7 +229,7 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 
 	clientID := req.PostFormValue(clientIDParam)
 	client, err := l.clientregistry.Get(context.TODO(), clientID, metav1.GetOptions{})
-	if err != nil || client == nil {
+	if err != nil || client == nil || reflect.ValueOf(client).Elem().IsZero() {
 		l.failed("Could not find client for client_id", w, req)
 		return
 	}
