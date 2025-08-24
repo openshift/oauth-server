@@ -100,7 +100,7 @@ func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig, audit *options.Au
 		return nil, err
 	}
 
-	anonymousAuthenticator := anonymous.NewAuthenticator()
+	anonymousAuthenticator := anonymous.NewAuthenticator(nil)
 	genericConfig.Authentication.Authenticator = union.New(
 		genericConfig.Authentication.Authenticator,
 		authenticator.RequestFunc(func(req *http.Request) (*authenticator.Response, bool, error) {
