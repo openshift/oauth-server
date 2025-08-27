@@ -2,7 +2,8 @@ package grant
 
 import (
 	"errors"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -55,7 +56,7 @@ func goodClientRegistry(clientID string, redirectURIs []string, literalScopes []
 }
 func badClientRegistry(err error) api.OAuthClientGetter {
 	fakeOAuthClient := oauthfake.NewSimpleClientset()
-	fakeOAuthClient.PrependReactor("get", "oauthclients", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+	fakeOAuthClient.PrependReactor("get", "oauthclients", func(clienttesting.Action) (bool, runtime.Object, error) {
 		return true, nil, err
 	})
 	return fakeOAuthClient.OauthV1().OAuthClients()
@@ -217,7 +218,7 @@ func TestGrant(t *testing.T) {
 		"error displaying form with invalid client": {
 			CSRF:           &csrf.FakeCSRF{Token: "test"},
 			Auth:           goodAuth("username"),
-			ClientRegistry: badClientRegistry(nil),
+			ClientRegistry: badClientRegistry(fmt.Errorf("error")),
 			AuthRegistry:   emptyAuthRegistry(),
 			Path:           "/grant",
 
@@ -228,7 +229,7 @@ func TestGrant(t *testing.T) {
 		"error submitting form with invalid client": {
 			CSRF:           &csrf.FakeCSRF{Token: "test"},
 			Auth:           goodAuth("username"),
-			ClientRegistry: badClientRegistry(nil),
+			ClientRegistry: badClientRegistry(fmt.Errorf("error")),
 			AuthRegistry:   emptyAuthRegistry(),
 			Path:           "/grant",
 			PostValues: url.Values{
@@ -394,88 +395,83 @@ func TestGrant(t *testing.T) {
 	}
 
 	for k, testCase := range testCases {
-		server := httptest.NewServer(NewGrant(testCase.CSRF, testCase.Auth, DefaultFormRenderer, testCase.ClientRegistry, testCase.AuthRegistry.OauthV1().OAuthClientAuthorizations()))
+		t.Run(k, func(t *testing.T) {
+			server := httptest.NewServer(NewGrant(testCase.CSRF, testCase.Auth, DefaultFormRenderer, testCase.ClientRegistry, testCase.AuthRegistry.OauthV1().OAuthClientAuthorizations()))
 
-		var resp *http.Response
-		if testCase.PostValues != nil {
-			r, err := postForm(server.URL+testCase.Path, testCase.PostValues)
-			if err != nil {
-				t.Errorf("%s: unexpected error: %v", k, err)
-				continue
+			var resp *http.Response
+			if testCase.PostValues != nil {
+				r, err := postForm(server.URL+testCase.Path, testCase.PostValues)
+				if err != nil {
+					t.Fatalf("%s: unexpected error: %v", k, err)
+				}
+				resp = r
+			} else {
+				r, err := getURL(server.URL + testCase.Path)
+				if err != nil {
+					t.Fatalf("%s: unexpected error: %v", k, err)
+				}
+				resp = r
 			}
-			resp = r
-		} else {
-			r, err := getURL(server.URL + testCase.Path)
-			if err != nil {
-				t.Errorf("%s: unexpected error: %v", k, err)
-				continue
+			defer resp.Body.Close()
+
+			if testCase.ExpectStatusCode != 0 && testCase.ExpectStatusCode != resp.StatusCode {
+				t.Fatalf("%s: unexpected response: %#v", k, resp)
 			}
-			resp = r
-		}
-		defer resp.Body.Close()
 
-		if testCase.ExpectStatusCode != 0 && testCase.ExpectStatusCode != resp.StatusCode {
-			t.Errorf("%s: unexpected response: %#v", k, resp)
-			continue
-		}
+			if len(testCase.ExpectCreatedAuthScopes) > 0 {
+				found := false
+				for _, action := range testCase.AuthRegistry.Actions() {
+					if action.Matches("create", "oauthclientauthorizations") {
+						found = true
+						auth := action.(clienttesting.CreateAction).GetObject().(*oapi.OAuthClientAuthorization)
+						if !reflect.DeepEqual(testCase.ExpectCreatedAuthScopes, auth.Scopes) {
+							t.Errorf("%s: expected created scopes %v, got %v", k, testCase.ExpectCreatedAuthScopes, auth.Scopes)
+							break
+						}
+					}
+				}
+				if !found {
+					t.Fatalf("%s: expected created auth, got nil", k)
+				}
+			}
 
-		if len(testCase.ExpectCreatedAuthScopes) > 0 {
-			found := false
-			for _, action := range testCase.AuthRegistry.Actions() {
-				if action.Matches("create", "oauthclientauthorizations") {
-					found = true
-					auth := action.(clienttesting.CreateAction).GetObject().(*oapi.OAuthClientAuthorization)
-					if !reflect.DeepEqual(testCase.ExpectCreatedAuthScopes, auth.Scopes) {
-						t.Errorf("%s: expected created scopes %v, got %v", k, testCase.ExpectCreatedAuthScopes, auth.Scopes)
-						break
+			if len(testCase.ExpectUpdatedAuthScopes) > 0 {
+				found := false
+				for _, action := range testCase.AuthRegistry.Actions() {
+					if action.Matches("update", "oauthclientauthorizations") {
+						found = true
+						auth := action.(clienttesting.UpdateAction).GetObject().(*oapi.OAuthClientAuthorization)
+						if !reflect.DeepEqual(testCase.ExpectUpdatedAuthScopes, auth.Scopes) {
+							t.Errorf("%s: expected updated scopes %v, got %v", k, testCase.ExpectUpdatedAuthScopes, auth.Scopes)
+							break
+						}
+					}
+				}
+				if !found {
+					t.Fatalf("%s: expected updated auth, got nil", k)
+				}
+			}
+
+			if testCase.ExpectRedirect != "" {
+				uri, err := resp.Location()
+				if err != nil {
+					t.Fatalf("%s: unexpected error: %v", k, err)
+				}
+				if uri.String() != server.URL+testCase.ExpectRedirect {
+					t.Errorf("%s: unexpected redirect: %s", k, uri.String())
+				}
+			}
+
+			if len(testCase.ExpectContains) > 0 {
+				data, _ := io.ReadAll(resp.Body)
+				body := string(data)
+				for i := range testCase.ExpectContains {
+					if !strings.Contains(body, testCase.ExpectContains[i]) {
+						t.Fatalf("%s: did not find expected value %s: %s", k, testCase.ExpectContains[i], body)
 					}
 				}
 			}
-			if !found {
-				t.Errorf("%s: expected created auth, got nil", k)
-				continue
-			}
-		}
-
-		if len(testCase.ExpectUpdatedAuthScopes) > 0 {
-			found := false
-			for _, action := range testCase.AuthRegistry.Actions() {
-				if action.Matches("update", "oauthclientauthorizations") {
-					found = true
-					auth := action.(clienttesting.UpdateAction).GetObject().(*oapi.OAuthClientAuthorization)
-					if !reflect.DeepEqual(testCase.ExpectUpdatedAuthScopes, auth.Scopes) {
-						t.Errorf("%s: expected updated scopes %v, got %v", k, testCase.ExpectUpdatedAuthScopes, auth.Scopes)
-						break
-					}
-				}
-			}
-			if !found {
-				t.Errorf("%s: expected updated auth, got nil", k)
-				continue
-			}
-		}
-
-		if testCase.ExpectRedirect != "" {
-			uri, err := resp.Location()
-			if err != nil {
-				t.Errorf("%s: unexpected error: %v", k, err)
-				continue
-			}
-			if uri.String() != server.URL+testCase.ExpectRedirect {
-				t.Errorf("%s: unexpected redirect: %s", k, uri.String())
-			}
-		}
-
-		if len(testCase.ExpectContains) > 0 {
-			data, _ := ioutil.ReadAll(resp.Body)
-			body := string(data)
-			for i := range testCase.ExpectContains {
-				if !strings.Contains(body, testCase.ExpectContains[i]) {
-					t.Errorf("%s: did not find expected value %s: %s", k, testCase.ExpectContains[i], body)
-					continue
-				}
-			}
-		}
+		})
 	}
 }
 

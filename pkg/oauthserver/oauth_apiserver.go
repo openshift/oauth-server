@@ -5,9 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -174,7 +174,7 @@ func NewOAuthServerConfig(oauthConfig osinv1.OAuthConfig, userClientConfig *rest
 
 			postStartHooks: map[string]genericapiserver.PostStartHookFunc{
 				"openshift.io-StartUserInformer": func(ctx genericapiserver.PostStartHookContext) error {
-					go userInformer.Start(ctx.StopCh)
+					go userInformer.Start(ctx.Done())
 					return nil
 				},
 			},
@@ -200,7 +200,7 @@ func getSessionSecrets(filename string) ([][]byte, error) {
 	var secrets [][]byte
 
 	if len(filename) != 0 {
-		data, err := ioutil.ReadFile(filename)
+		data, err := os.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}

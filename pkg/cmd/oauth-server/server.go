@@ -5,8 +5,10 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/openshift/oauth-server/pkg/version"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/component-base/compatibility"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +34,7 @@ import (
 // RunOsinServer starts a server that is based on the osin and kubernetes/apiserver frameworks.
 //
 // AuditOptions could be changed into a general options solution.
-func RunOsinServer(osinConfig *osinv1.OsinServerConfig, audit *options.AuditOptions, stopCh <-chan struct{}) error {
+func RunOsinServer(ctx context.Context, osinConfig *osinv1.OsinServerConfig, audit *options.AuditOptions) error {
 	if osinConfig == nil {
 		return errors.New("osin server requires non-empty oauthConfig")
 	}
@@ -47,13 +49,15 @@ func RunOsinServer(osinConfig *osinv1.OsinServerConfig, audit *options.AuditOpti
 		return err
 	}
 
-	return oauthServer.GenericAPIServer.PrepareRun().Run(stopCh)
+	return oauthServer.GenericAPIServer.PrepareRun().RunWithContext(ctx)
 }
 
 func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig, audit *options.AuditOptions) (*oauthserver.OAuthServerConfig, error) {
 	scheme := runtime.NewScheme()
 	metav1.AddToGroupVersion(scheme, corev1.SchemeGroupVersion)
 	genericConfig := genericapiserver.NewRecommendedConfig(serializer.NewCodecFactory(scheme))
+
+	genericConfig.EffectiveVersion = compatibility.NewEffectiveVersionFromString(version.Get().String(), "", "")
 
 	servingOptions, err := serving.ToServingOptions(osinConfig.ServingInfo)
 	if err != nil {
@@ -100,7 +104,7 @@ func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig, audit *options.Au
 		return nil, err
 	}
 
-	anonymousAuthenticator := anonymous.NewAuthenticator()
+	anonymousAuthenticator := anonymous.NewAuthenticator(nil)
 	genericConfig.Authentication.Authenticator = union.New(
 		genericConfig.Authentication.Authenticator,
 		authenticator.RequestFunc(func(req *http.Request) (*authenticator.Response, bool, error) {
