@@ -5,9 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -200,7 +200,7 @@ func getSessionSecrets(filename string) ([][]byte, error) {
 	var secrets [][]byte
 
 	if len(filename) != 0 {
-		data, err := ioutil.ReadFile(filename)
+		data, err := os.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}

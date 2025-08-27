@@ -34,7 +34,7 @@ import (
 // RunOsinServer starts a server that is based on the osin and kubernetes/apiserver frameworks.
 //
 // AuditOptions could be changed into a general options solution.
-func RunOsinServer(osinConfig *osinv1.OsinServerConfig, audit *options.AuditOptions, stopCh <-chan struct{}) error {
+func RunOsinServer(ctx context.Context, osinConfig *osinv1.OsinServerConfig, audit *options.AuditOptions) error {
 	if osinConfig == nil {
 		return errors.New("osin server requires non-empty oauthConfig")
 	}
@@ -49,7 +49,7 @@ func RunOsinServer(osinConfig *osinv1.OsinServerConfig, audit *options.AuditOpti
 		return err
 	}
 
-	return oauthServer.GenericAPIServer.PrepareRun().Run(stopCh)
+	return oauthServer.GenericAPIServer.PrepareRun().RunWithContext(ctx)
 }
 
 func newOAuthServerConfig(osinConfig *osinv1.OsinServerConfig, audit *options.AuditOptions) (*oauthserver.OAuthServerConfig, error) {
