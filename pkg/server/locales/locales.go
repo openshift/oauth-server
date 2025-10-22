@@ -59,19 +59,6 @@ var locale_en = Localization{
 }
 
 var locale_es = Localization{
-	"LogInToYourAccount":                   "Connectez-vous à votre compte",
-	"Username":                             "Nom d'utilisateur",
-	"Password":                             "Mot de passe",
-	"LogIn":                                "Se connecter",
-	"WelcomeTo":                            "Bienvenue à",
-	"LogInWith":                            "Connectez-vous avec",
-	"Error":                                "Erreur",
-	"LoginIsRequiredPleaseTryAgain":        "La connexion est requise. Veuillez réessayer.",
-	"CouldNotCheckCSRFTokenPleaseTryAgain": "Impossible de vérifier le jeton CSRF. Veuillez réessayer.",
-	"InvalidLoginOrPasswordPleaseTryAgain": "Identifiant ou mot de passe invalide. Veuillez réessayer.",
-}
-
-var locale_fr = Localization{
 	"LogInToYourAccount":                   "Inicia sesión en tu cuenta",
 	"Username":                             "Nombre de usuario",
 	"Password":                             "Contraseña",
@@ -82,6 +69,19 @@ var locale_fr = Localization{
 	"LoginIsRequiredPleaseTryAgain":        "Se requiere iniciar sesión. Por favor, inténtalo de nuevo.",
 	"CouldNotCheckCSRFTokenPleaseTryAgain": "No se pudo verificar el token CSRF. Por favor, inténtalo de nuevo.",
 	"InvalidLoginOrPasswordPleaseTryAgain": "Usuario o contraseña inválidos. Por favor, inténtalo de nuevo.",
+}
+
+var locale_fr = Localization{
+	"LogInToYourAccount":                   "Connectez-vous à votre compte",
+	"Username":                             "Nom d'utilisateur",
+	"Password":                             "Mot de passe",
+	"LogIn":                                "Se connecter",
+	"WelcomeTo":                            "Bienvenue à",
+	"LogInWith":                            "Connectez-vous avec",
+	"Error":                                "Erreur",
+	"LoginIsRequiredPleaseTryAgain":        "La connexion est requise. Veuillez réessayer.",
+	"CouldNotCheckCSRFTokenPleaseTryAgain": "Impossible de vérifier le jeton CSRF. Veuillez réessayer.",
+	"InvalidLoginOrPasswordPleaseTryAgain": "Identifiant ou mot de passe invalide. Veuillez réessayer.",
 }
 
 var locale_zh = Localization{
