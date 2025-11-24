@@ -3,7 +3,6 @@ package oauthserver
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -35,13 +34,13 @@ func TestGetMissingSessionSecretsFile(t *testing.T) {
 }
 
 func TestGetInvalidSessionSecretsFile(t *testing.T) {
-	tmpfile, err := ioutil.TempFile("", "invalid.yaml")
+	tmpfile, err := os.CreateTemp("", "invalid.yaml")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	defer os.Remove(tmpfile.Name())
 
-	if err := ioutil.WriteFile(tmpfile.Name(), []byte("invalid content"), os.FileMode(0600)); err != nil {
+	if err := os.WriteFile(tmpfile.Name(), []byte("invalid content"), os.FileMode(0600)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -52,7 +51,7 @@ func TestGetInvalidSessionSecretsFile(t *testing.T) {
 }
 
 func TestGetEmptySessionSecretsFile(t *testing.T) {
-	tmpfile, err := ioutil.TempFile("", "empty.yaml")
+	tmpfile, err := os.CreateTemp("", "empty.yaml")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -66,7 +65,7 @@ func TestGetEmptySessionSecretsFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	if err := ioutil.WriteFile(tmpfile.Name(), []byte(yaml), os.FileMode(0600)); err != nil {
+	if err := os.WriteFile(tmpfile.Name(), []byte(yaml), os.FileMode(0600)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -168,7 +167,7 @@ func TestConfigureTransport_ProxyCAFileNotFound(t *testing.T) {
 }
 
 func TestGetValidSessionSecretsFile(t *testing.T) {
-	tmpfile, err := ioutil.TempFile("", "valid.yaml")
+	tmpfile, err := os.CreateTemp("", "valid.yaml")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -186,7 +185,7 @@ func TestGetValidSessionSecretsFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	if err := ioutil.WriteFile(tmpfile.Name(), []byte(yaml), os.FileMode(0600)); err != nil {
+	if err := os.WriteFile(tmpfile.Name(), []byte(yaml), os.FileMode(0600)); err != nil {
 		t.Fatal(err)
 	}
 
