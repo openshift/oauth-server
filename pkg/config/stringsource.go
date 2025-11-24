@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -31,7 +30,7 @@ func ResolveStringValue(s configv1.StringSource) (string, error) {
 	case len(s.Env) > 0:
 		value = os.Getenv(s.Env)
 	case len(s.File) > 0:
-		data, err := ioutil.ReadFile(s.File)
+		data, err := os.ReadFile(s.File)
 		if err != nil {
 			return "", err
 		}
@@ -45,7 +44,7 @@ func ResolveStringValue(s configv1.StringSource) (string, error) {
 		return value, nil
 	}
 
-	keyData, err := ioutil.ReadFile(s.KeyFile)
+	keyData, err := os.ReadFile(s.KeyFile)
 	if err != nil {
 		return "", err
 	}
