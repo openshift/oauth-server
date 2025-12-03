@@ -119,6 +119,8 @@ github.com/ianlancetaylor/demangle v0.0.0-20210905161508-09a460cdf81d/go.mod h1:
 github.com/ianlancetaylor/demangle v0.0.0-20230524184225-eabc099b10ab/go.mod h1:gx7rwoVhcfuVKG5uya9Hs3Sxj7EIvldVofAWIUtGouw=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
+github.com/ingvagabund/kubernetes-apiserver v0.0.0-20251124125735-7bc3c9987f36 h1:8dfZmofRL/Q9YmCekniMPthN7feiXKvL6gtI8EyB7SY=
+github.com/ingvagabund/kubernetes-apiserver v0.0.0-20251124125735-7bc3c9987f36/go.mod h1:05632ifFEe6TxwjdAIrwINHWE2hLwyADFk5mBsQa15E=
 github.com/jonboulle/clockwork v0.4.0 h1:p4Cf1aMWXnXAUh8lVfewRBx1zaTSYKrKMF2g3ST4RZ4=
 github.com/jonboulle/clockwork v0.4.0/go.mod h1:xgRqUGwRcjKCO1vbZUEtSLrqKoPSsUpK7fnezOII0kc=
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
@@ -159,8 +161,6 @@ github.com/openshift/build-machinery-go v0.0.0-20250806130835-622c0378eb0d h1:iw
 github.com/openshift/build-machinery-go v0.0.0-20250806130835-622c0378eb0d/go.mod h1:8jcm8UPtg2mCAsxfqKil1xrmRMI3a+XU2TZ9fF8A7TE=
 github.com/openshift/client-go v0.0.0-20250811163556-6193816ae379 h1:Xr47DBqFVjpLdU4BTtCS5l2XojbRYap2FIPdSj8YYzU=
 github.com/openshift/client-go v0.0.0-20250811163556-6193816ae379/go.mod h1:HouQRy4JgvTBpxcyw1YSD/Lp+wjOaUrxjWFHlMtZsk8=
-github.com/openshift/kubernetes-apiserver v0.0.0-20250827071042-b0ff18f3664f h1:N/xAKHHCCsmNB6aqBcPitK7m4IMnYuzzLFQjENTFwqU=
-github.com/openshift/kubernetes-apiserver v0.0.0-20250827071042-b0ff18f3664f/go.mod h1:05632ifFEe6TxwjdAIrwINHWE2hLwyADFk5mBsQa15E=
 github.com/openshift/library-go v0.0.0-20250818065802-cf8518058622 h1:IUs2XpDgkCQIIAPCVnHEjIUYiq0dvVskD/ekof7+XjQ=
 github.com/openshift/library-go v0.0.0-20250818065802-cf8518058622/go.mod h1:tptKNust9MdRI0p90DoBSPHIrBa9oh+Rok59tF0vT8c=
 github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f h1:4da9vH8eDlJo58703cADj3FlsdnFRgsnfuwj/4lYXfY=

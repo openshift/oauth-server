@@ -119,4 +119,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20250827071042-b0ff18f3664f // points to openshift-apiserver-4.20-kubernetes-1.33
+replace k8s.io/apiserver => github.com/ingvagabund/kubernetes-apiserver v0.0.0-20251124125735-7bc3c9987f36 // points to openshift-apiserver-4.20-kubernetes-1.33
