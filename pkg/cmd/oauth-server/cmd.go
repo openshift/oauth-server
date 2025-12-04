@@ -1,10 +1,10 @@
 package oauth_server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apiserver/pkg/server/options"
+	serveroptions "k8s.io/apiserver/pkg/server/options"
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -25,12 +25,12 @@ import (
 
 type OsinServerOptions struct {
 	ConfigFile string
-	Audit      *options.AuditOptions
+	Audit      *serveroptions.AuditOptions
 }
 
-func NewOsinServerCommand(out, errout io.Writer, stopCh <-chan struct{}) (*cobra.Command, error) {
+func NewOsinServerCommand(ctx context.Context, _, errout io.Writer) (*cobra.Command, error) {
 	options := &OsinServerOptions{
-		Audit: options.NewAuditOptions(),
+		Audit: serveroptions.NewAuditOptions(),
 	}
 
 	cmd := &cobra.Command{
@@ -43,7 +43,7 @@ func NewOsinServerCommand(out, errout io.Writer, stopCh <-chan struct{}) (*cobra
 
 			serviceability.StartProfiler()
 
-			if err := options.RunOsinServer(stopCh); err != nil {
+			if err := options.RunOsinServer(ctx); err != nil {
 				if kerrors.IsInvalid(err) {
 					if details := err.(*kerrors.StatusError).ErrStatus.Details; details != nil {
 						fmt.Fprintf(errout, "Invalid %s %s\n", details.Kind, details.Name)
@@ -85,8 +85,8 @@ func (o *OsinServerOptions) Validate() error {
 	return nil
 }
 
-func (o *OsinServerOptions) RunOsinServer(stopCh <-chan struct{}) error {
-	configContent, err := ioutil.ReadFile(o.ConfigFile)
+func (o *OsinServerOptions) RunOsinServer(ctx context.Context) error {
+	configContent, err := os.ReadFile(o.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -105,5 +105,5 @@ func (o *OsinServerOptions) RunOsinServer(stopCh <-chan struct{}) error {
 		return fmt.Errorf("expected OsinServerConfig, got %T", config)
 	}
 
-	return RunOsinServer(config, o.Audit, stopCh)
+	return RunOsinServer(ctx, config, o.Audit)
 }

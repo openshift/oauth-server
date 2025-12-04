@@ -1,12 +1,11 @@
 package main
 
 import (
+	"context"
 	goflag "flag"
 	"fmt"
-	"math/rand"
 	"os"
 	"runtime"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -22,9 +21,8 @@ import (
 )
 
 func main() {
-	stopCh := genericapiserver.SetupSignalHandler()
-
-	rand.Seed(time.Now().UTC().UnixNano())
+	ctx := genericapiserver.SetupSignalContext()
+	defer ctx.Done()
 
 	pflag.CommandLine.SetNormalizeFunc(utilflag.WordSepNormalizeFunc)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
@@ -38,7 +36,7 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	command, err := NewOpenshiftIntegratedOAuthServerCommand(stopCh)
+	command, err := NewOpenshiftIntegratedOAuthServerCommand(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(2)
@@ -46,7 +44,7 @@ func main() {
 	os.Exit(cli.Run(command))
 }
 
-func NewOpenshiftIntegratedOAuthServerCommand(stopCh <-chan struct{}) (*cobra.Command, error) {
+func NewOpenshiftIntegratedOAuthServerCommand(ctx context.Context) (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:   "oauth-server",
 		Short: "Command for the OpenShift integrated OAuth server",
@@ -56,7 +54,7 @@ func NewOpenshiftIntegratedOAuthServerCommand(stopCh <-chan struct{}) (*cobra.Co
 		},
 	}
 
-	startOsin, err := openshift_integrated_oauth_server.NewOsinServerCommand(os.Stdout, os.Stderr, stopCh)
+	startOsin, err := openshift_integrated_oauth_server.NewOsinServerCommand(ctx, os.Stdout, os.Stderr)
 	if err != nil {
 		return nil, err
 	}

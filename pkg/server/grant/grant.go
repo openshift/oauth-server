@@ -17,7 +17,7 @@ import (
 
 	oapi "github.com/openshift/api/oauth/v1"
 	oauthclient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
-	scopemetadata "github.com/openshift/library-go/pkg/authorization/scopemetadata"
+	"github.com/openshift/library-go/pkg/authorization/scopemetadata"
 	oauthserver "github.com/openshift/oauth-server/pkg"
 	"github.com/openshift/oauth-server/pkg/api"
 	"github.com/openshift/oauth-server/pkg/scopecovers"
@@ -70,11 +70,11 @@ type GrantFormFields struct {
 type Scope struct {
 	// Name is the string included in the OAuth scope parameter
 	Name string
-	// Description is a human-readable description of the scope. May be empty.
+	// Description is an optional human-readable description of the scope.
 	Description string
-	// Warning is a human-readable warning about the scope. Typically used to scare the user about escalating permissions. May be empty.
+	// Warning is an optional human-readable warning about the scope. Typically used to scare the user about escalating permissions.
 	Warning string
-	// Error is a human-readable error, typically around the validity of the scope. May be empty.
+	// Error is an optional human-readable error, typically around the validity of the scope.
 	Error string
 	// Granted indicates whether the user has already granted this scope.
 	Granted bool
@@ -137,9 +137,9 @@ func (l *Grant) handleForm(user user.Info, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	grantedScopeNames := []string{}
-	grantedScopes := []Scope{}
-	requestedScopes := []Scope{}
+	var grantedScopeNames []string
+	var grantedScopes []Scope
+	var requestedScopes []Scope
 
 	clientAuthID := user.GetName() + ":" + client.Name
 	if clientAuth, err := l.authregistry.Get(context.TODO(), clientAuthID, metav1.GetOptions{}); err == nil {
@@ -213,15 +213,15 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 
 	if len(req.PostFormValue(approveParam)) == 0 || len(scopes) == 0 {
 		// Redirect with an error param
-		url, err := url.Parse(then)
+		redirectURL, err := url.Parse(then)
 		if len(then) == 0 || err != nil {
 			l.failed("Access denied, but no redirect URL was specified", w, req)
 			return
 		}
-		q := url.Query()
+		q := redirectURL.Query()
 		q.Set("error", "access_denied")
-		url.RawQuery = q.Encode()
-		w.Header().Set("Location", url.String())
+		redirectURL.RawQuery = q.Encode()
+		w.Header().Set("Location", redirectURL.String())
 		w.WriteHeader(http.StatusFound)
 		return
 	}
@@ -267,15 +267,15 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 	}
 
 	// Redirect, overriding the scope param on the redirect with the scopes that were actually granted
-	url, err := url.Parse(then)
+	redirectURL, err := url.Parse(then)
 	if len(then) == 0 || err != nil {
 		l.failed("Access granted, but no redirect URL was specified", w, req)
 		return
 	}
-	q := url.Query()
+	q := redirectURL.Query()
 	q.Set(scopeParam, scopes)
-	url.RawQuery = q.Encode()
-	w.Header().Set("Location", url.String())
+	redirectURL.RawQuery = q.Encode()
+	w.Header().Set("Location", redirectURL.String())
 	w.WriteHeader(http.StatusFound)
 }
 
@@ -326,7 +326,7 @@ var DefaultFormRenderer = grantTemplateRenderer{}
 
 type grantTemplateRenderer struct{}
 
-func (r grantTemplateRenderer) Render(form Form, w http.ResponseWriter, req *http.Request) {
+func (r grantTemplateRenderer) Render(form Form, w http.ResponseWriter, _ *http.Request) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 

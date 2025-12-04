@@ -56,6 +56,10 @@ var locale_en = Localization{
 	"LoginIsRequiredPleaseTryAgain":        "Login is required. Please try again.",
 	"CouldNotCheckCSRFTokenPleaseTryAgain": "Could not check CSRF token. Please try again.",
 	"InvalidLoginOrPasswordPleaseTryAgain": "Invalid login or password. Please try again.",
+	"CouldNotCreateUser":                   "Could not create user.",
+	"CouldNotFindUser":                     "Could not find user.",
+	"AnAuthenticationErrorOccurred":        "An authentication error occurred.",
+	"GrantErrorOccurred":                   "A grant error occurred.",
 }
 
 var locale_es = Localization{
@@ -69,6 +73,10 @@ var locale_es = Localization{
 	"LoginIsRequiredPleaseTryAgain":        "Se requiere iniciar sesión. Por favor, inténtalo de nuevo.",
 	"CouldNotCheckCSRFTokenPleaseTryAgain": "No se pudo verificar el token CSRF. Por favor, inténtalo de nuevo.",
 	"InvalidLoginOrPasswordPleaseTryAgain": "Usuario o contraseña inválidos. Por favor, inténtalo de nuevo.",
+	"CouldNotCreateUser":                   "No se pudo crear el usuario.",
+	"CouldNotFindUser":                     "No se pudo encontrar el usuario.",
+	"AnAuthenticationErrorOccurred":        "Se produjo un error de autenticación.",
+	"GrantErrorOccurred":                   "Se produjo un error de concesión.",
 }
 
 var locale_fr = Localization{
@@ -82,6 +90,10 @@ var locale_fr = Localization{
 	"LoginIsRequiredPleaseTryAgain":        "La connexion est requise. Veuillez réessayer.",
 	"CouldNotCheckCSRFTokenPleaseTryAgain": "Impossible de vérifier le jeton CSRF. Veuillez réessayer.",
 	"InvalidLoginOrPasswordPleaseTryAgain": "Identifiant ou mot de passe invalide. Veuillez réessayer.",
+	"CouldNotCreateUser":                   "Impossible de créer l'utilisateur.",
+	"CouldNotFindUser":                     "Impossible de trouver l'utilisateur.",
+	"AnAuthenticationErrorOccurred":        "Une erreur d'authentification s'est produite.",
+	"GrantErrorOccurred":                   "Une erreur de concession s'est produite.",
 }
 
 var locale_zh = Localization{
@@ -95,6 +107,10 @@ var locale_zh = Localization{
 	"LoginIsRequiredPleaseTryAgain":        "需要登录。请再次尝试。",
 	"CouldNotCheckCSRFTokenPleaseTryAgain": "无法检查 CSRF 令牌。请重试。",
 	"InvalidLoginOrPasswordPleaseTryAgain": "无效的登录或密码。请再次尝试。",
+	"CouldNotCreateUser":                   "无法创建用户。",
+	"CouldNotFindUser":                     "无法找到用户。",
+	"AnAuthenticationErrorOccurred":        "发生身份验证错误。",
+	"GrantErrorOccurred":                   "发生授权错误。",
 }
 
 var locale_ja = Localization{
@@ -108,6 +124,10 @@ var locale_ja = Localization{
 	"LoginIsRequiredPleaseTryAgain":        "ログインが必要です。もう一度やり直してください。",
 	"CouldNotCheckCSRFTokenPleaseTryAgain": "CSRF トークンを確認できませんでした。もう一度やり直してください。",
 	"InvalidLoginOrPasswordPleaseTryAgain": "無効なログインまたはパスワードです。もう一度やり直してください。",
+	"CouldNotCreateUser":                   "ユーザーを作成できませんでした。",
+	"CouldNotFindUser":                     "ユーザーが見つかりませんでした。",
+	"AnAuthenticationErrorOccurred":        "認証エラーが発生しました。",
+	"GrantErrorOccurred":                   "許可エラーが発生しました。",
 }
 
 var locale_ko = Localization{
@@ -121,4 +141,8 @@ var locale_ko = Localization{
 	"LoginIsRequiredPleaseTryAgain":        "로그인이 필요합니다. 다시 시도하십시오.",
 	"CouldNotCheckCSRFTokenPleaseTryAgain": "CSRF 토큰을 확인할 수 없습니다. 다시 시도하십시오.",
 	"InvalidLoginOrPasswordPleaseTryAgain": "로그인 또는 비밀번호가 잘못되었습니다. 다시 시도하십시오",
+	"CouldNotCreateUser":                   "사용자를 만들 수 없습니다.",
+	"CouldNotFindUser":                     "사용자를 찾을 수 없습니다.",
+	"AnAuthenticationErrorOccurred":        "인증 오류가 발생했습니다.",
+	"GrantErrorOccurred":                   "권한 부여 오류가 발생했습니다.",
 }
