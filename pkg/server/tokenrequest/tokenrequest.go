@@ -219,6 +219,8 @@ const cssStyle = `
 	code     { font-weight: 300; font-size: 1.5em; margin-bottom: 1em; display: inline-block;  color: #646464;  }
 	pre      { padding-left: 1em; border-radius: 5px; color: #003d6e; background-color: #EAEDF0; padding: 1.5em 0 1.5em 4.5em; white-space: normal; text-indent: -2em; }
 	pre>button { margin-left: 1.5em; margin-right: 1.5em; float: right; }
+	pre>button:disabled { color: #444; }
+	pre>button:disabled:hover { text-decoration: none; cursor: default; }
 	a        { color: #00f; text-decoration: none; }
 	a:hover  { text-decoration: underline; }
 	button   { background: none; border: none; color: #00f; text-decoration: none; font: inherit; padding: 0; }
@@ -234,31 +236,77 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
 {{ if .Error }}
   {{ .Error }}
 {{ else }}
-  <h2>Your API token is</h2>
-  <code>{{.AccessToken}}</code>
-
   <script>
-    var commands = {
-      login: 'oc login --token={{.AccessTokenJSStr}} --server={{.PublicMasterURLJSStr}}',
-      apiCall: 'curl -H "Authorization: Bearer {{.AccessTokenJSStr}}" "{{.PublicMasterURLJSStr}}/apis/user.openshift.io/v1/users/~"',
-    };
+    function codeSnippet(e, textBlocks) {
+      const snippet = textBlocks.join(' ');
+
+      const snippetHTML = textBlocks
+        .map((text) => '<span class="nowrap">' + text + '</span>')
+        .join(' ');
+
+      const copyButton = document.createElement('button');
+      copyButton.innerText = 'Copy';
+
+      copyButton.onclick = () => {
+        copyButton.disabled = true;
+        navigator.clipboard.writeText(snippet)
+          .then(() => {
+            copyButton.innerText = 'Copied!';
+            setTimeout(() => {
+              copyButton.innerText = 'Copy';
+              copyButton.disabled = false;
+            }, 3000);
+          })
+          .catch((error) => {
+            copyButton.innerText = 'Error!';
+            setTimeout(() => {
+              copyButton.innerText = 'Copy';
+              copyButton.disabled = false;
+            }, 3000);
+            console.error('Failed to copy snippet to clipboard', error);
+          });
+      };
+
+      const showButton = document.createElement('button');
+      showButton.innerText = 'Show';
+
+      showButton.onclick = () => {
+        e.innerHTML = snippetHTML;
+        e.appendChild(copyButton);
+      };
+
+      e.innerHTML = '***';
+      e.appendChild(copyButton);
+      e.appendChild(showButton);
+    }
   </script>
 
+  <h2>Your API token is</h2>
+  <pre id="token"></pre>
+
   <h2>Log in with this token</h2>
-  <pre>
-    oc login
-    <span class="nowrap">--token={{.AccessToken}}</span>
-    <span class="nowrap">--server={{.PublicMasterURL}}</span>
-    <button onclick="navigator.clipboard.writeText(commands.login)">Copy</button>
-  </pre>
+  <pre id="login"></pre>
 
   <h3>Use this token directly against the API</h3>
-  <pre>
-    curl
-    <span class="nowrap">-H "Authorization: Bearer {{.AccessToken}}"</span>
-    <span class="nowrap">"{{.PublicMasterURL}}/apis/user.openshift.io/v1/users/~"</span>
-    <button onclick="navigator.clipboard.writeText(commands.apiCall)">Copy</button>
-  </pre>
+  <pre id="apiCall"></pre>
+
+  <script>
+    codeSnippet(document.getElementById('token'), [
+      '{{.AccessTokenJSStr}}',
+    ]);
+
+    codeSnippet(document.getElementById('login'), [
+      'oc login',
+      '--token={{.AccessTokenJSStr}}',
+      '--server={{.PublicMasterURLJSStr}}',
+    ]);
+
+    codeSnippet(document.getElementById('apiCall'), [
+      'curl',
+      '-H "Authorization: Bearer {{.AccessTokenJSStr}}"',
+      '"{{.PublicMasterURLJSStr}}/apis/user.openshift.io/v1/users/~"',
+    ]);
+  </script>
 {{ end }}
 
 <br><br>
