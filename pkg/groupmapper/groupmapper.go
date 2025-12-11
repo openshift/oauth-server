@@ -3,19 +3,16 @@ package groupmapper
 import (
 	"context"
 	"fmt"
-	"time"
+	"slices"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/wait"
 	kuser "k8s.io/apiserver/pkg/authentication/user"
 
 	userv1 "github.com/openshift/api/user/v1"
 	userclient "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
 	userinformer "github.com/openshift/client-go/user/informers/externalversions/user/v1"
 	userlisterv1 "github.com/openshift/client-go/user/listers/user/v1"
-	usercache "github.com/openshift/library-go/pkg/oauth/usercache"
 
 	authapi "github.com/openshift/oauth-server/pkg/api"
 )
@@ -58,18 +55,12 @@ func (w *UserInfoGroupsWrapper) GetGroups() []string {
 type UserGroupsMapper struct {
 	delegatedUserMapper authapi.UserIdentityMapper
 	groupsClient        userclient.GroupInterface
-	groupsLister        userlisterv1.GroupLister
-	groupsCache         *usercache.GroupCache
-	groupsSynced        func() bool
 }
 
 func NewUserGroupsMapper(delegate authapi.UserIdentityMapper, groupInformer userinformer.GroupInformer, groupsClient userclient.GroupInterface, groupsLister userlisterv1.GroupLister) *UserGroupsMapper {
 	return &UserGroupsMapper{
 		delegatedUserMapper: delegate,
 		groupsClient:        groupsClient,
-		groupsLister:        groupsLister,
-		groupsCache:         usercache.NewGroupCache(groupInformer),
-		groupsSynced:        groupInformer.Informer().HasSynced,
 	}
 }
 
@@ -90,28 +81,37 @@ func (m *UserGroupsMapper) UserFor(identityInfo authapi.UserIdentityInfo) (kuser
 	}, nil
 }
 
-func (m *UserGroupsMapper) processGroups(idpName, username string, groups sets.String) error {
-	err := wait.PollImmediate(1*time.Second, 5*time.Second, func() (bool, error) {
-		return m.groupsSynced(), nil
-	})
+// processGroups synchronizes the user's group memberships with the identity provider.
+// NOTE: This makes a direct API call to list all groups on every login to ensure
+// correctness and avoid cache staleness issues (see OCPBUGS-63228).
+func (m *UserGroupsMapper) processGroups(idpName, username string, providerGroups sets.String) error {
+	ctx := context.Background()
+	clusterGroupsList, err := m.groupsClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("could not list cluster groups: %v", err)
 	}
 
-	cachedGroups, err := m.groupsCache.GroupsFor(username)
-	if err != nil {
-		return err
+	clusterGroups := map[string]*userv1.Group{}
+	for _, g := range clusterGroupsList.Items {
+		clusterGroups[g.Name] = &g
 	}
 
-	removeGroups, addGroups := groupsDiff(cachedGroups, groups)
+	userGroupsForIDP := make([]*userv1.Group, 0)
+	for _, g := range clusterGroupsList.Items {
+		if g.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] == "synced" && slices.Contains(g.Users, username) {
+			userGroupsForIDP = append(userGroupsForIDP, &g)
+		}
+	}
+
+	removeGroups, addGroups := groupsDiff(userGroupsForIDP, providerGroups)
 	for _, g := range removeGroups {
-		if err := m.removeUserFromGroup(idpName, username, g); err != nil {
+		if err := m.removeUserFromGroup(ctx, idpName, username, clusterGroups[g]); err != nil {
 			return err
 		}
 	}
 
 	for _, g := range addGroups {
-		if err := m.addUserToGroup(idpName, username, g); err != nil {
+		if err := m.addUserToGroup(ctx, idpName, username, g, clusterGroups[g]); err != nil {
 			return err
 		}
 	}
@@ -119,31 +119,23 @@ func (m *UserGroupsMapper) processGroups(idpName, username string, groups sets.S
 	return nil
 }
 
-func (m *UserGroupsMapper) removeUserFromGroup(idpName, username, group string) error {
-	updatedGroup, err := m.groupsLister.Get(group)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-
-	if len(updatedGroup.Users) == 0 {
+func (m *UserGroupsMapper) removeUserFromGroup(ctx context.Context, idpName, username string, group *userv1.Group) error {
+	if group == nil || len(group.Users) == 0 {
 		return nil
 	}
 
-	if len(updatedGroup.Users) == 1 && updatedGroup.Users[0] == username && updatedGroup.Annotations[groupGeneratedKey] == "true" {
-		return m.groupsClient.Delete(context.TODO(), group, metav1.DeleteOptions{})
+	if len(group.Users) == 1 && group.Users[0] == username && group.Annotations[groupGeneratedKey] == "true" {
+		return m.groupsClient.Delete(ctx, group.Name, metav1.DeleteOptions{})
 	}
 
 	// don't perform any actions on the group if it hasn't been synced for this IdP
-	if updatedGroup.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] != "synced" {
+	if group.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] != "synced" {
 		return nil
 	}
 
 	// find the user and remove it from the slice
 	userIdx := -1
-	for i, groupUser := range updatedGroup.Users {
+	for i, groupUser := range group.Users {
 		if groupUser == username {
 			userIdx = i
 			break
@@ -155,25 +147,24 @@ func (m *UserGroupsMapper) removeUserFromGroup(idpName, username, group string) 
 	case -1:
 		return nil
 	case 0:
-		newUsers = updatedGroup.Users[1:]
+		newUsers = group.Users[1:]
 	default:
-		newUsers = append(updatedGroup.Users[0:userIdx], updatedGroup.Users[userIdx+1:]...)
+		newUsers = append(group.Users[0:userIdx], group.Users[userIdx+1:]...)
 	}
 
-	updatedGroupCopy := updatedGroup.DeepCopy()
+	updatedGroupCopy := group.DeepCopy()
 	updatedGroupCopy.Users = newUsers
 
-	_, err = m.groupsClient.Update(context.TODO(), updatedGroupCopy, metav1.UpdateOptions{})
+	_, err := m.groupsClient.Update(ctx, updatedGroupCopy, metav1.UpdateOptions{})
 	return err
 }
 
-func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error {
-	updatedGroup, err := m.groupsLister.Get(group)
-	if errors.IsNotFound(err) {
-		_, err = m.groupsClient.Create(context.TODO(),
+func (m *UserGroupsMapper) addUserToGroup(ctx context.Context, idpName, username, groupName string, updatedGroup *userv1.Group) error {
+	if updatedGroup == nil {
+		_, err := m.groupsClient.Create(ctx,
 			&userv1.Group{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: group,
+					Name: groupName,
 					Annotations: map[string]string{
 						fmt.Sprintf(groupSyncedKeyFmt, idpName): "synced",
 						groupGeneratedKey:                       "true",
@@ -183,9 +174,6 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 			},
 			metav1.CreateOptions{},
 		)
-		return err
-	}
-	if err != nil {
 		return err
 	}
 
@@ -210,7 +198,7 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 	}
 	updatedGroupCopy.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] = "synced"
 
-	_, err = m.groupsClient.Update(context.TODO(), updatedGroupCopy, metav1.UpdateOptions{})
+	_, err := m.groupsClient.Update(ctx, updatedGroupCopy, metav1.UpdateOptions{})
 	return err
 }
 

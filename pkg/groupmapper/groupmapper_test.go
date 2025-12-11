@@ -17,13 +17,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 	kuser "k8s.io/apiserver/pkg/authentication/user"
-	"k8s.io/client-go/tools/cache"
 
 	userv1 "github.com/openshift/api/user/v1"
 	fakeuserclient "github.com/openshift/client-go/user/clientset/versioned/fake"
-	userinformer "github.com/openshift/client-go/user/informers/externalversions"
-	userlisterv1 "github.com/openshift/client-go/user/listers/user/v1"
-	usercache "github.com/openshift/library-go/pkg/oauth/usercache"
 
 	authapi "github.com/openshift/oauth-server/pkg/api"
 )
@@ -78,27 +74,14 @@ func TestUserGroupsMapper_UserFor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			groupObjs := []runtime.Object{}
-			indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
 			for _, g := range basicGroups {
 				groupObjs = append(groupObjs, g)
-				require.NoError(t, indexer.Add(g))
 			}
 			fakeGroupsClient := fakeuserclient.NewSimpleClientset(groupObjs...)
-
-			userInformer := userinformer.NewSharedInformerFactory(fakeGroupsClient, 5*time.Second)
-			require.NoError(t, userInformer.User().V1().Groups().Informer().AddIndexers(cache.Indexers{
-				usercache.ByUserIndexName: usercache.ByUserIndexKeys,
-			}))
-			testCtx, cancelCtx := context.WithCancel(context.Background())
-			go userInformer.Start(testCtx.Done())
-			defer cancelCtx()
 
 			m := &UserGroupsMapper{
 				delegatedUserMapper: &mockUserMapper{userInfo: kuser.DefaultInfo{Name: tt.username, UID: "tehUserUID", Groups: []string{"system:one", "system:two"}}},
 				groupsClient:        fakeGroupsClient.UserV1().Groups(),
-				groupsLister:        userlisterv1.NewGroupLister(indexer),
-				groupsCache:         usercache.NewGroupCache(userInformer.User().V1().Groups()),
-				groupsSynced:        userInformer.User().V1().Groups().Informer().HasSynced,
 			}
 
 			identityInfo := &authapi.DefaultUserIdentityInfo{ProviderName: testIDPName, ProviderUserName: tt.username, ProviderGroups: tt.idpGroups}
@@ -130,10 +113,12 @@ func TestUserGroupsMapper_UserFor(t *testing.T) {
 			require.NoError(t, err)
 			for _, g := range groups.Items {
 				assertion := require.False
+				assertionStr := "require user '%s' not present in group '%s'"
 				if userGroups.Has(g.Name) {
 					assertion = require.True
+					assertionStr = "require user '%s' present in group '%s'"
 				}
-				assertion(t, userPresent(tt.username, g.Users))
+				assertion(t, userPresent(tt.username, g.Users), fmt.Sprintf(assertionStr, tt.username, g.Name))
 				userGroups.Delete(g.Name)
 			}
 			require.True(t, userGroups.Len() == 0)
@@ -223,11 +208,9 @@ func TestUserGroupsMapper_removeUserFromGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
 			groups := []runtime.Object{}
 			if tt.group != nil {
 				groups = append(groups, tt.group)
-				require.NoError(t, indexer.Add(tt.group))
 			}
 			fakeUserClient := fakeuserclient.NewSimpleClientset(groups...)
 			testCtx := context.Background()
@@ -236,7 +219,6 @@ func TestUserGroupsMapper_removeUserFromGroup(t *testing.T) {
 			defer groupWatcher.Stop()
 
 			m := &UserGroupsMapper{
-				groupsLister: userlisterv1.NewGroupLister(indexer),
 				groupsClient: fakeUserClient.UserV1().Groups(),
 			}
 
@@ -250,7 +232,7 @@ func TestUserGroupsMapper_removeUserFromGroup(t *testing.T) {
 			go watchForGroupEvents(groupWatcher, tt.expectedGroup, tt.expectEvent, expectedEventType, failed, finished, timedCtx)
 
 			go func() {
-				if err := m.removeUserFromGroup(testIDPName, tt.username, testGroupName); (err != nil) != tt.wantErr {
+				if err := m.removeUserFromGroup(t.Context(), testIDPName, tt.username, tt.group); (err != nil) != tt.wantErr {
 					t.Errorf("UserGroupsMapper.removeUserFromGroup() error = %v, wantErr %v", err, tt.wantErr)
 				}
 
@@ -324,11 +306,9 @@ func TestUserGroupsMapper_addUserToGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
 			groups := []runtime.Object{}
 			if tt.group != nil {
 				groups = append(groups, tt.group)
-				require.NoError(t, indexer.Add(tt.group))
 			}
 			fakeUserClient := fakeuserclient.NewSimpleClientset(groups...)
 			testCtx := context.Background()
@@ -337,7 +317,6 @@ func TestUserGroupsMapper_addUserToGroup(t *testing.T) {
 			defer groupWatcher.Stop()
 
 			m := &UserGroupsMapper{
-				groupsLister: userlisterv1.NewGroupLister(indexer),
 				groupsClient: fakeUserClient.UserV1().Groups(),
 			}
 
@@ -351,7 +330,7 @@ func TestUserGroupsMapper_addUserToGroup(t *testing.T) {
 			go watchForGroupEvents(groupWatcher, tt.expectedGroup, tt.expectEvent, expectedEventType, failed, finished, timedCtx)
 
 			go func() {
-				if err := m.addUserToGroup(testIDPName, tt.username, testGroupName); (err != nil) != tt.wantErr {
+				if err := m.addUserToGroup(t.Context(), testIDPName, tt.username, testGroupName, tt.group); (err != nil) != tt.wantErr {
 					t.Errorf("UserGroupsMapper.addUserToGroup() error = %v, wantErr %v", err, tt.wantErr)
 				}
 
