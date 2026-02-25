@@ -3,6 +3,7 @@ package groupmapper
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -142,23 +143,14 @@ func (m *UserGroupsMapper) removeUserFromGroup(idpName, username, group string) 
 	}
 
 	// find the user and remove it from the slice
-	userIdx := -1
-	for i, groupUser := range updatedGroup.Users {
-		if groupUser == username {
-			userIdx = i
-			break
-		}
+	userIdx := slices.Index(updatedGroup.Users, username)
+	if userIdx == -1 {
+		return nil
 	}
 
-	var newUsers []string
-	switch userIdx {
-	case -1:
-		return nil
-	case 0:
-		newUsers = updatedGroup.Users[1:]
-	default:
-		newUsers = append(updatedGroup.Users[0:userIdx], updatedGroup.Users[userIdx+1:]...)
-	}
+	newUsers := make([]string, 0, len(updatedGroup.Users)-1)
+	newUsers = append(newUsers, updatedGroup.Users[:userIdx]...)
+	newUsers = append(newUsers, updatedGroup.Users[userIdx+1:]...)
 
 	updatedGroupCopy := updatedGroup.DeepCopy()
 	updatedGroupCopy.Users = newUsers
@@ -206,7 +198,7 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 
 	updatedGroupCopy := updatedGroup.DeepCopy()
 	if !onlyAddAnnotation {
-		updatedGroupCopy.Users = append(updatedGroup.Users, username)
+		updatedGroupCopy.Users = append(updatedGroupCopy.Users, username)
 	}
 	updatedGroupCopy.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] = "synced"
 
