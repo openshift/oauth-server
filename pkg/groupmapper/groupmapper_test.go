@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -439,6 +440,122 @@ func watchForGroupEvents(
 			return
 		}
 	}
+}
+
+func TestRemoveUserFromGroup_DoesNotMutateCachedObject(t *testing.T) {
+	const testGroupName = "test-group"
+
+	tests := []struct {
+		name          string
+		username      string
+		originalUsers []string
+		expectedUsers []string // users expected in the group after removal
+	}{
+		{
+			name:          "remove middle user (default case)",
+			username:      "user2",
+			originalUsers: []string{"user1", "user2", "user3", "user4"},
+			expectedUsers: []string{"user1", "user3", "user4"},
+		},
+		{
+			name:          "remove first user (case 0)",
+			username:      "user1",
+			originalUsers: []string{"user1", "user2", "user3", "user4"},
+			expectedUsers: []string{"user2", "user3", "user4"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			group := createGroupWithUsers(testGroupName, tt.originalUsers...)
+			fakeUserClient := fakeuserclient.NewSimpleClientset(group)
+
+			// Use a real informer so the lister and GroupCache share the
+			// same underlying indexed store, just like in production.
+			informerFactory := userinformer.NewSharedInformerFactory(fakeUserClient, 0)
+			groupInformer := informerFactory.User().V1().Groups()
+			require.NoError(t, groupInformer.Informer().AddIndexers(cache.Indexers{
+				usercache.ByUserIndexName: usercache.ByUserIndexKeys,
+			}))
+
+			ctx := t.Context()
+			informerFactory.Start(ctx.Done())
+			cache.WaitForCacheSync(ctx.Done(), groupInformer.Informer().HasSynced)
+
+			indexer := groupInformer.Informer().GetIndexer()
+
+			m := &UserGroupsMapper{
+				groupsLister: userlisterv1.NewGroupLister(indexer),
+				groupsClient: fakeUserClient.UserV1().Groups(),
+				groupsCache:  usercache.NewGroupCache(groupInformer),
+			}
+
+			err := m.removeUserFromGroup(testIDPName, tt.username, testGroupName)
+			require.NoError(t, err)
+
+			// Simulate the watch event: the API returns the correctly updated
+			// group, and the informer calls indexer.Update with it. This is
+			// where the re-indexing happens against the (possibly corrupted)
+			// old cached object.
+			updatedGroup := createGroupWithUsers(testGroupName, tt.expectedUsers...)
+			require.NoError(t, indexer.Update(updatedGroup))
+
+			// The removed user should no longer appear in GroupsFor results.
+			// With the bug, the append mutation causes the re-indexer to miss
+			// cleaning up the removed user's index entry, creating a phantom.
+			groups, err := m.groupsCache.GroupsFor(tt.username)
+			require.NoError(t, err)
+			require.False(t, slices.ContainsFunc(groups, func(g *userv1.Group) bool {
+				return g.Name == testGroupName
+			}), "phantom index entry: GroupsFor(%q) still returns %q after user was removed", tt.username, testGroupName)
+		})
+	}
+}
+
+func TestAddUserToGroup_DoesNotMutateCachedObject(t *testing.T) {
+	const testGroupName = "test-group"
+
+	// Create a Users slice with extra capacity so append can write into
+	// the backing array without allocating.
+	users := make(userv1.OptionalNames, 2, 4)
+	users[0] = "user1"
+	users[1] = "user2"
+
+	group := &userv1.Group{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testGroupName,
+			Annotations: map[string]string{
+				fmt.Sprintf(groupSyncedKeyFmt, testIDPName): "synced",
+				groupGeneratedKey: "true",
+			},
+		},
+		Users: users,
+	}
+
+	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	require.NoError(t, indexer.Add(group))
+	fakeUserClient := fakeuserclient.NewSimpleClientset(group)
+
+	m := &UserGroupsMapper{
+		groupsLister: userlisterv1.NewGroupLister(indexer),
+		groupsClient: fakeUserClient.UserV1().Groups(),
+	}
+
+	err := m.addUserToGroup(testIDPName, "user3", testGroupName)
+	require.NoError(t, err)
+
+	obj, exists, err := indexer.GetByKey(testGroupName)
+	require.NoError(t, err)
+	require.True(t, exists)
+
+	cachedGroup := obj.(*userv1.Group)
+	require.Equal(t, []string{"user1", "user2"}, []string(cachedGroup.Users),
+		"cached object was mutated: Users changed from [user1 user2] to %v", cachedGroup.Users)
+
+	// Also verify the backing array beyond len was not written to.
+	// Extend the slice to its capacity and check the spare slots.
+	fullSlice := cachedGroup.Users[:cap(cachedGroup.Users)]
+	require.Empty(t, fullSlice[2],
+		"backing array was mutated beyond len: slot 2 contains %q", fullSlice[2])
 }
 
 var basicGroups = []*userv1.Group{
