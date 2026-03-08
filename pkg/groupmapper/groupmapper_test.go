@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 	kuser "k8s.io/apiserver/pkg/authentication/user"
+	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 
 	userv1 "github.com/openshift/api/user/v1"
@@ -79,25 +81,54 @@ func TestUserGroupsMapper_UserFor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			groupObjs := []runtime.Object{}
-			indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
 			for _, g := range basicGroups {
 				groupObjs = append(groupObjs, g)
-				require.NoError(t, indexer.Add(g))
 			}
 			fakeGroupsClient := fakeuserclient.NewSimpleClientset(groupObjs...)
+			// Add watch reactor to send initial bookmark event for k8s 1.35+
+			var once sync.Once
+			fakeGroupsClient.PrependWatchReactor("groups", func(action k8stesting.Action) (handled bool, ret watch.Interface, err error) {
+				gvr := action.GetResource()
+				ns := action.GetNamespace()
+				fakeWatch, err := fakeGroupsClient.Tracker().Watch(gvr, ns)
+				if err != nil {
+					return false, nil, err
+				}
+				// Send initial bookmark event to satisfy k8s 1.35 requirement (only once)
+				once.Do(func() {
+					go func() {
+						time.Sleep(1 * time.Second) // Delay to let List complete and objects be processed
+						fakeWatch.(*watch.RaceFreeFakeWatcher).Action(watch.Bookmark, &userv1.Group{
+							ObjectMeta: metav1.ObjectMeta{
+								ResourceVersion: "1",
+								Annotations: map[string]string{
+									metav1.InitialEventsAnnotationKey: "true",
+								},
+							},
+						})
+					}()
+				})
+				return true, fakeWatch, nil
+			})
 
 			userInformer := userinformer.NewSharedInformerFactory(fakeGroupsClient, 5*time.Second)
 			require.NoError(t, userInformer.User().V1().Groups().Informer().AddIndexers(cache.Indexers{
 				usercache.ByUserIndexName: usercache.ByUserIndexKeys,
 			}))
 			testCtx, cancelCtx := context.WithCancel(context.Background())
-			go userInformer.Start(testCtx.Done())
+			userInformer.Start(testCtx.Done())
 			defer cancelCtx()
+			cache.WaitForCacheSync(testCtx.Done(), userInformer.User().V1().Groups().Informer().HasSynced)
+			// Add the groups to the indexer here because the bookmark is being sent before the informer
+			// processes its initial List results
+			for _, g := range basicGroups {
+				userInformer.User().V1().Groups().Informer().GetIndexer().Add(g)
+			}
 
 			m := &UserGroupsMapper{
 				delegatedUserMapper: &mockUserMapper{userInfo: kuser.DefaultInfo{Name: tt.username, UID: "tehUserUID", Groups: []string{"system:one", "system:two"}}},
 				groupsClient:        fakeGroupsClient.UserV1().Groups(),
-				groupsLister:        userlisterv1.NewGroupLister(indexer),
+				groupsLister:        userInformer.User().V1().Groups().Lister(),
 				groupsCache:         usercache.NewGroupCache(userInformer.User().V1().Groups()),
 				groupsSynced:        userInformer.User().V1().Groups().Informer().HasSynced,
 			}
@@ -468,6 +499,31 @@ func TestRemoveUserFromGroup_DoesNotMutateCachedObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			group := createGroupWithUsers(testGroupName, tt.originalUsers...)
 			fakeUserClient := fakeuserclient.NewSimpleClientset(group)
+			// Add watch reactor to send initial bookmark event for k8s 1.35+
+			var once sync.Once
+			fakeUserClient.PrependWatchReactor("groups", func(action k8stesting.Action) (handled bool, ret watch.Interface, err error) {
+				gvr := action.GetResource()
+				ns := action.GetNamespace()
+				fakeWatch, err := fakeUserClient.Tracker().Watch(gvr, ns)
+				if err != nil {
+					return false, nil, err
+				}
+				// Send initial bookmark event to satisfy k8s 1.35 requirement (only once)
+				once.Do(func() {
+					go func() {
+						time.Sleep(1 * time.Second) // Delay to let List complete and objects be processed
+						fakeWatch.(*watch.RaceFreeFakeWatcher).Action(watch.Bookmark, &userv1.Group{
+							ObjectMeta: metav1.ObjectMeta{
+								ResourceVersion: "1",
+								Annotations: map[string]string{
+									metav1.InitialEventsAnnotationKey: "true",
+								},
+							},
+						})
+					}()
+				})
+				return true, fakeWatch, nil
+			})
 
 			// Use a real informer so the lister and GroupCache share the
 			// same underlying indexed store, just like in production.
@@ -480,6 +536,9 @@ func TestRemoveUserFromGroup_DoesNotMutateCachedObject(t *testing.T) {
 			ctx := t.Context()
 			informerFactory.Start(ctx.Done())
 			cache.WaitForCacheSync(ctx.Done(), groupInformer.Informer().HasSynced)
+			// Add the group to the indexer here because the bookmark is being sent before the informer
+			// processes its initial List results
+			groupInformer.Informer().GetIndexer().Add(group)
 
 			indexer := groupInformer.Informer().GetIndexer()
 
