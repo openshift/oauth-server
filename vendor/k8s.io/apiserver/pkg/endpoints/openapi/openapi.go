@@ -171,5 +171,16 @@ func (d *DefinitionNamer) GetDefinitionName(name string) (string, spec.Extension
 			extensionGVK: groupVersionKinds.JSON(),
 		}
 	}
+	// In v1.35 d.typeGroupVersionKinds is constructed from REST-friendly types only.
+	// If not found, try converting to REST-friendly format to find a match.
+	// (e.g., "github.com/openshift/api/image/v1.ImageStreamImport" -> "com.github.openshift.api.image.v1.ImageStreamImport")
+	restFriendlyName := util.ToRESTFriendlyName(name)
+	if restFriendlyName != name {
+		if groupVersionKinds, ok := d.typeGroupVersionKinds[restFriendlyName]; ok {
+			return name, spec.Extensions{
+				extensionGVK: groupVersionKinds.JSON(),
+			}
+		}
+	}
 	return name, nil
 }

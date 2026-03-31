@@ -125,8 +125,8 @@ github.com/ianlancetaylor/demangle v0.0.0-20210905161508-09a460cdf81d/go.mod h1:
 github.com/ianlancetaylor/demangle v0.0.0-20230524184225-eabc099b10ab/go.mod h1:gx7rwoVhcfuVKG5uya9Hs3Sxj7EIvldVofAWIUtGouw=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/ingvagabund/kubernetes-apiserver v0.0.0-20260306164045-e9bd1f437897 h1:wwmVlu66AkLVUY5eQ0ccRH4xREhroNbVtG3y2SSjCko=
-github.com/ingvagabund/kubernetes-apiserver v0.0.0-20260306164045-e9bd1f437897/go.mod h1:CROJUAu0tfjZLyYgSeBsBan2T7LUJGh0ucWwTCSSk7g=
+github.com/ingvagabund/kubernetes-apiserver v0.0.0-20260331194754-69a4ff5de266 h1:NhxbzYBsnQ89DEZ3y0l67jWlgKoIkfVcgfMxvwkf+Lk=
+github.com/ingvagabund/kubernetes-apiserver v0.0.0-20260331194754-69a4ff5de266/go.mod h1:CROJUAu0tfjZLyYgSeBsBan2T7LUJGh0ucWwTCSSk7g=
 github.com/jcmturner/aescts/v2 v2.0.0 h1:9YKLH6ey7H4eDBXW8khjYslgyqG2xZikXP0EQFKrle8=
 github.com/jcmturner/aescts/v2 v2.0.0/go.mod h1:AiaICIRyfYg35RUkr8yESTqvSy7csK90qZ5xfvvsoNs=
 github.com/jcmturner/dnsutils/v2 v2.0.0 h1:lltnkeZGL0wILNvrNiVCR6Ro5PGU/SeBvVO/8c/iPbo=
