@@ -8,10 +8,10 @@ require (
 	github.com/go-ldap/ldap/v3 v3.4.11
 	github.com/gophercloud/gophercloud/v2 v2.4.0
 	github.com/gorilla/sessions v1.2.1
-	github.com/openshift/api v0.0.0-20260105191300-d1c4dc4fd37b
+	github.com/openshift/api v0.0.0-20260413132630-e010a985205d
 	github.com/openshift/build-machinery-go v0.0.0-20251023084048-5d77c1a5e5af
 	github.com/openshift/client-go v0.0.0-20251205093018-96a6cbc1420c
-	github.com/openshift/library-go v0.0.0-20251205073205-ab8d51820e0b
+	github.com/openshift/library-go v0.0.0-20260309173530-9ed71ac3148f
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
 	github.com/spf13/cobra v1.9.1
@@ -121,4 +121,4 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20260211130612-1431f3222f03 // points to openshift-apiserver-4.21-kubernetes-1.34.1
+replace k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20260415154523-acdcc04896b5 // points to openshift-apiserver-4.22-kubernetes-1.34.1
