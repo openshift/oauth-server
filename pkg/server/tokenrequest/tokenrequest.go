@@ -237,32 +237,36 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
   {{ .Error }}
 {{ else }}
   <script>
-    function codeSnippet(e, textBlocks) {
-      const snippet = textBlocks.join(' ');
+    function codeSnippet(e, textBlocks = []) {
+      const snippetString = textBlocks.join(' ').trim();
 
       const snippetHTML = textBlocks
-        .map((text) => '<span class="nowrap">' + text + '</span>')
+        .map((text) => {
+          const span = document.createElement('span');
+          span.className = 'nowrap';
+          span.innerText = text;
+          return span.outerHTML;
+        })
         .join(' ');
 
       const copyButton = document.createElement('button');
       copyButton.innerText = 'Copy';
 
+      const resetCopyButton = () => {
+        copyButton.innerText = 'Copy';
+        copyButton.disabled = false;
+      };
+
       copyButton.onclick = () => {
         copyButton.disabled = true;
-        navigator.clipboard.writeText(snippet)
+        navigator.clipboard.writeText(snippetString)
           .then(() => {
             copyButton.innerText = 'Copied!';
-            setTimeout(() => {
-              copyButton.innerText = 'Copy';
-              copyButton.disabled = false;
-            }, 3000);
+            setTimeout(resetCopyButton, 3000);
           })
           .catch((error) => {
             copyButton.innerText = 'Error!';
-            setTimeout(() => {
-              copyButton.innerText = 'Copy';
-              copyButton.disabled = false;
-            }, 3000);
+            setTimeout(resetCopyButton, 3000);
             console.error('Failed to copy snippet to clipboard', error);
           });
       };
