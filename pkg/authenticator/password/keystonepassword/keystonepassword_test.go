@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -59,7 +59,7 @@ func TestKeystoneLogin(t *testing.T) {
 			}
 		}
 		var x AuthRequest
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		th.AssertNoErr(t, json.Unmarshal(body, &x))
 		domainName := x.Auth.Identity.Password.User.Domain.Name
 		userName := x.Auth.Identity.Password.User.Name
