@@ -144,6 +144,8 @@ func (t *tokenRequest) displayTokenPost(osinOAuthClient *osincli.Client, w http.
 	}
 
 	data.AccessToken = accessData.AccessToken
+	data.AccessTokenJSStr = template.JSStr(data.AccessToken)
+	data.PublicMasterURLJSStr = template.JSStr(data.PublicMasterURL)
 	renderToken(w, data)
 }
 
@@ -178,9 +180,11 @@ type sharedData struct {
 type tokenData struct {
 	sharedData
 
-	AccessToken     string
-	PublicMasterURL string
-	LogoutURL       string
+	AccessToken          string
+	AccessTokenJSStr     template.JSStr
+	PublicMasterURL      string
+	PublicMasterURLJSStr template.JSStr
+	LogoutURL            string
 }
 
 func getBaseURL(req *http.Request) (*url.URL, error) {
@@ -214,6 +218,9 @@ const cssStyle = `
 	code,pre { font-family: Menlo, Monaco, Consolas, monospace; }
 	code     { font-weight: 300; font-size: 1.5em; margin-bottom: 1em; display: inline-block;  color: #646464;  }
 	pre      { padding-left: 1em; border-radius: 5px; color: #003d6e; background-color: #EAEDF0; padding: 1.5em 0 1.5em 4.5em; white-space: normal; text-indent: -2em; }
+	pre>button { margin-left: 1.5em; margin-right: 1.5em; float: right; }
+	pre>button:disabled { color: #444; }
+	pre>button:disabled:hover { text-decoration: none; cursor: default; }
 	a        { color: #00f; text-decoration: none; }
 	a:hover  { text-decoration: underline; }
 	button   { background: none; border: none; color: #00f; text-decoration: none; font: inherit; padding: 0; }
@@ -229,14 +236,81 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
 {{ if .Error }}
   {{ .Error }}
 {{ else }}
+  <script>
+    function codeSnippet(e, textBlocks = []) {
+      const snippetString = textBlocks.join(' ').trim();
+
+      const snippetHTML = textBlocks
+        .map((text) => {
+          const span = document.createElement('span');
+          span.className = 'nowrap';
+          span.innerText = text;
+          return span.outerHTML;
+        })
+        .join(' ');
+
+      const copyButton = document.createElement('button');
+      copyButton.innerText = 'Copy';
+
+      const resetCopyButton = () => {
+        copyButton.innerText = 'Copy';
+        copyButton.disabled = false;
+      };
+
+      copyButton.onclick = () => {
+        copyButton.disabled = true;
+        navigator.clipboard.writeText(snippetString)
+          .then(() => {
+            copyButton.innerText = 'Copied!';
+            setTimeout(resetCopyButton, 3000);
+          })
+          .catch((error) => {
+            copyButton.innerText = 'Error!';
+            setTimeout(resetCopyButton, 3000);
+            console.error('Failed to copy snippet to clipboard', error);
+          });
+      };
+
+      const showButton = document.createElement('button');
+      showButton.innerText = 'Show';
+
+      showButton.onclick = () => {
+        e.innerHTML = snippetHTML;
+        e.appendChild(copyButton);
+      };
+
+      e.innerHTML = '***';
+      e.appendChild(copyButton);
+      e.appendChild(showButton);
+    }
+  </script>
+
   <h2>Your API token is</h2>
-  <code>{{.AccessToken}}</code>
+  <pre id="token"></pre>
 
   <h2>Log in with this token</h2>
-  <pre>oc login <span class="nowrap">--token={{.AccessToken}}</span> <span class="nowrap">--server={{.PublicMasterURL}}</span></pre>
+  <pre id="login"></pre>
 
   <h3>Use this token directly against the API</h3>
-  <pre>curl <span class="nowrap">-H "Authorization: Bearer {{.AccessToken}}"</span> <span class="nowrap">"{{.PublicMasterURL}}/apis/user.openshift.io/v1/users/~"</span></pre>
+  <pre id="apiCall"></pre>
+
+  <script>
+    codeSnippet(document.getElementById('token'), [
+      '{{.AccessTokenJSStr}}',
+    ]);
+
+    codeSnippet(document.getElementById('login'), [
+      'oc login',
+      '--token={{.AccessTokenJSStr}}',
+      '--server={{.PublicMasterURLJSStr}}',
+    ]);
+
+    codeSnippet(document.getElementById('apiCall'), [
+      'curl',
+      '-H "Authorization: Bearer {{.AccessTokenJSStr}}"',
+      '"{{.PublicMasterURLJSStr}}/apis/user.openshift.io/v1/users/~"',
+    ]);
+  </script>
 {{ end }}
 
 <br><br>
