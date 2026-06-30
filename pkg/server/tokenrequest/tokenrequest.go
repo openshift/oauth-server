@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/openshift/osincli"
 
@@ -144,7 +145,21 @@ func (t *tokenRequest) displayTokenPost(osinOAuthClient *osincli.Client, w http.
 	}
 
 	data.AccessToken = accessData.AccessToken
+	data.OcLoginCommand = formatOcLoginCommand(data.AccessToken, data.PublicMasterURL)
+	data.CurlCommand = formatCurlCommand(data.AccessToken, data.PublicMasterURL)
 	renderToken(w, data)
+}
+
+func formatOcLoginCommand(accessToken, publicMasterURL string) string {
+	return fmt.Sprintf("oc login --token=%s --server=%s", accessToken, publicMasterURL)
+}
+
+func formatCurlCommand(accessToken, publicMasterURL string) string {
+	return fmt.Sprintf(
+		`curl -H "Authorization: Bearer %s" "%s/apis/user.openshift.io/v1/users/~"`,
+		accessToken,
+		strings.TrimRight(publicMasterURL, "/"),
+	)
 }
 
 func displayTokenStart(osinOAuthClient *osincli.Client, w http.ResponseWriter, req *http.Request, data *sharedData) (*osincli.AuthorizeData, bool) {
@@ -179,6 +194,8 @@ type tokenData struct {
 	sharedData
 
 	AccessToken     string
+	OcLoginCommand  string
+	CurlCommand     string
 	PublicMasterURL string
 	LogoutURL       string
 }
@@ -216,12 +233,70 @@ const cssStyle = `
 	pre      { padding-left: 1em; border-radius: 5px; color: #003d6e; background-color: #EAEDF0; padding: 1.5em 0 1.5em 4.5em; white-space: normal; text-indent: -2em; }
 	a        { color: #00f; text-decoration: none; }
 	a:hover  { text-decoration: underline; }
-	button   { background: none; border: none; color: #00f; text-decoration: none; font: inherit; padding: 0; }
-	button:hover { text-decoration: underline; cursor: pointer; }
+	button, .copy-button { background: none; border: none; color: #00f; text-decoration: none; font: inherit; padding: 0; }
+	button:hover, .copy-button:hover { text-decoration: underline; cursor: pointer; }
+	.copy-heading { display: inline; }
+	.copy-heading .copy-button { font-size: 0.85em; margin-left: 0.75em; }
 	@media (min-width: 768px) {
 		.nowrap { white-space: nowrap; }
 	}
 </style>
+`
+
+const copyToClipboardScript = `
+<script>
+(function () {
+  var copyLabel = 'Copy to clipboard';
+  var copiedLabel = 'Copied';
+
+  function showCopied(button) {
+    button.textContent = copiedLabel;
+    button.setAttribute('aria-label', copiedLabel);
+    window.setTimeout(function () {
+      button.textContent = copyLabel;
+      button.setAttribute('aria-label', copyLabel);
+    }, 1250);
+  }
+
+  function fallbackCopy(text, button) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'absolute';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      if (document.execCommand('copy')) {
+        showCopied(button);
+      }
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  }
+
+  function copyText(text, button) {
+    if (!text) {
+      return;
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () {
+        showCopied(button);
+      }).catch(function () {
+        fallbackCopy(text, button);
+      });
+      return;
+    }
+    fallbackCopy(text, button);
+  }
+
+  document.querySelectorAll('[data-copy-text]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      copyText(button.getAttribute('data-copy-text'), button);
+    });
+  });
+})();
+</script>
 `
 
 var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
@@ -229,14 +304,15 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
 {{ if .Error }}
   {{ .Error }}
 {{ else }}
-  <h2>Your API token is</h2>
+  <h2 class="copy-heading">Your API token is <button type="button" class="copy-button" data-copy-text="{{.AccessToken}}" aria-label="Copy to clipboard">Copy to clipboard</button></h2>
   <code>{{.AccessToken}}</code>
 
-  <h2>Log in with this token</h2>
+  <h2 class="copy-heading">Log in with this token <button type="button" class="copy-button" data-copy-text="{{.OcLoginCommand}}" aria-label="Copy to clipboard">Copy to clipboard</button></h2>
   <pre>oc login <span class="nowrap">--token={{.AccessToken}}</span> <span class="nowrap">--server={{.PublicMasterURL}}</span></pre>
 
-  <h3>Use this token directly against the API</h3>
+  <h3 class="copy-heading">Use this token directly against the API <button type="button" class="copy-button" data-copy-text="{{.CurlCommand}}" aria-label="Copy to clipboard">Copy to clipboard</button></h3>
   <pre>curl <span class="nowrap">-H "Authorization: Bearer {{.AccessToken}}"</span> <span class="nowrap">"{{.PublicMasterURL}}/apis/user.openshift.io/v1/users/~"</span></pre>
+  ` + copyToClipboardScript + `
 {{ end }}
 
 <br><br>
