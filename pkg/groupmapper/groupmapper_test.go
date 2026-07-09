@@ -3,6 +3,7 @@ package groupmapper
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"slices"
 	"testing"
@@ -28,6 +29,15 @@ import (
 
 	authapi "github.com/openshift/oauth-server/pkg/api"
 )
+
+// The WatchListClient feature gate (default-on in k8s 1.35) makes informer
+// reflectors use streaming lists that require bookmark events from the server.
+// The generated informer's ListWatch doesn't propagate the fake client's
+// IsWatchListSemanticsUnSupported signal to the reflector, so disable it.
+func TestMain(m *testing.M) {
+	os.Setenv("KUBE_FEATURE_WatchListClient", "false")
+	os.Exit(m.Run())
+}
 
 const testIDPName = "test-idp"
 
