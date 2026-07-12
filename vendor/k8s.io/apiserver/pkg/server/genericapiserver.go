@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	gpath "path"
 	"strings"
 	"sync"
@@ -30,6 +31,7 @@ import (
 
 	"golang.org/x/time/rate"
 	apidiscoveryv2 "k8s.io/api/apidiscovery/v2"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -301,6 +303,9 @@ type GenericAPIServer struct {
 	// This grace period is orthogonal to other grace periods, and
 	// it is not overridden by any other grace period.
 	ShutdownWatchTerminationGracePeriod time.Duration
+	// EventSink creates events.
+	eventSink EventSink
+	eventRef  *corev1.ObjectReference
 }
 
 // DelegationTarget is an interface which allows for composition of API servers with top level handling that works
@@ -567,7 +572,11 @@ func (s preparedGenericAPIServer) RunWithContext(ctx context.Context) error {
 		shutdownInitiatedCh.Signal()
 		klog.V(1).InfoS("[graceful-termination] shutdown event", "name", shutdownInitiatedCh.Name())
 
+		s.Eventf(corev1.EventTypeNormal, "TerminationStart", "Received signal to terminate, becoming unready, but keeping serving")
+
 		time.Sleep(s.ShutdownDelayDuration)
+
+		s.Eventf(corev1.EventTypeNormal, "TerminationMinimalShutdownDurationFinished", "The minimal shutdown duration of %v finished", s.ShutdownDelayDuration)
 	}()
 
 	// close socket after delayed stopCh
@@ -644,6 +653,7 @@ func (s preparedGenericAPIServer) RunWithContext(ctx context.Context) error {
 
 		// wait for the delayed stopCh before closing the handler chain (it rejects everything after Wait has been called).
 		<-notAcceptingNewRequestCh.Signaled()
+		s.Eventf(corev1.EventTypeNormal, "TerminationStoppedServing", "Server has stopped listening")
 
 		// Wait for all requests to finish, which are bounded by the RequestTimeout variable.
 		// once NonLongRunningRequestWaitGroup.Wait is invoked, the apiserver is
@@ -717,6 +727,7 @@ func (s preparedGenericAPIServer) RunWithContext(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	klog.V(1).Info("[graceful-termination] RunPreShutdownHooks has completed")
 
 	// Wait for all requests in flight to drain, bounded by the RequestTimeout variable.
 	<-drainedCh.Signaled()
@@ -724,6 +735,7 @@ func (s preparedGenericAPIServer) RunWithContext(ctx context.Context) error {
 	if s.AuditBackend != nil {
 		s.AuditBackend.Shutdown()
 		klog.V(1).InfoS("[graceful-termination] audit backend shutdown completed")
+		s.Eventf(corev1.EventTypeNormal, "TerminationPreShutdownHooksFinished", "All pre-shutdown hooks have been finished")
 	}
 
 	// wait for stoppedCh that is closed when the graceful termination (server.Shutdown) is finished.
@@ -731,6 +743,8 @@ func (s preparedGenericAPIServer) RunWithContext(ctx context.Context) error {
 	<-stoppedCh
 
 	klog.V(1).Info("[graceful-termination] apiserver is exiting")
+	s.Eventf(corev1.EventTypeNormal, "TerminationGracefulTerminationFinished", "All pending requests processed")
+
 	return nil
 }
 
@@ -1087,4 +1101,34 @@ func getResourceNamesForGroup(apiPrefix string, apiGroupInfo *APIGroupInfo, path
 	}
 
 	return resourceNames, nil
+}
+
+// Eventf creates an event with the API server as source, either in default namespace against default namespace, or
+// if POD_NAME/NAMESPACE are set against that pod.
+func (s *GenericAPIServer) Eventf(eventType, reason, messageFmt string, args ...interface{}) {
+	t := metav1.Time{Time: time.Now()}
+	host, _ := os.Hostname() // expicitly ignore error. Empty host is fine
+
+	ref := *s.eventRef
+	if len(ref.Namespace) == 0 {
+		ref.Namespace = "default" // TODO: event broadcaster sets event ns to default. We have to match. Odd.
+	}
+
+	e := &corev1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%v.%x", ref.Name, t.UnixNano()),
+			Namespace: ref.Namespace,
+		},
+		InvolvedObject: ref,
+		Reason:         reason,
+		Message:        fmt.Sprintf(messageFmt, args...),
+		Type:           eventType,
+		Source:         corev1.EventSource{Component: "apiserver", Host: host},
+	}
+
+	klog.V(2).Infof("Event(%#v): type: '%v' reason: '%v' %v", e.InvolvedObject, e.Type, e.Reason, e.Message)
+
+	if _, err := s.eventSink.Create(e); err != nil {
+		klog.Warningf("failed to create event %s/%s: %v", e.Namespace, e.Name, err)
+	}
 }
