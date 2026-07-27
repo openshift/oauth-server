@@ -396,8 +396,8 @@ infrastructures.config.openshift.io:
   FeatureGates:
   - AWSClusterHostedDNSInstall
   - AWSDualStackInstall
-  - AzureClusterHostedDNSInstall
   - AzureDualStackInstall
+  - BGPBasedVIPManagement
   - DualReplica
   - DyanmicServiceEndpointIBMCloud
   - MutableTopology
