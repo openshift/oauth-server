@@ -263,7 +263,11 @@ func TestUserGroupsMapper_removeUserFromGroup(t *testing.T) {
 			}
 			fakeUserClient := fakeuserclient.NewSimpleClientset(groups...)
 			testCtx := context.Background()
-			groupWatcher, err := fakeUserClient.UserV1().Groups().Watch(testCtx, metav1.ListOptions{})
+			groupList, err := fakeUserClient.UserV1().Groups().List(testCtx, metav1.ListOptions{})
+			require.NoError(t, err)
+			groupWatcher, err := fakeUserClient.UserV1().Groups().Watch(testCtx, metav1.ListOptions{
+				ResourceVersion: groupList.ResourceVersion,
+			})
 			require.NoError(t, err)
 			defer groupWatcher.Stop()
 
@@ -364,7 +368,11 @@ func TestUserGroupsMapper_addUserToGroup(t *testing.T) {
 			}
 			fakeUserClient := fakeuserclient.NewSimpleClientset(groups...)
 			testCtx := context.Background()
-			groupWatcher, err := fakeUserClient.UserV1().Groups().Watch(testCtx, metav1.ListOptions{})
+			groupList, err := fakeUserClient.UserV1().Groups().List(testCtx, metav1.ListOptions{})
+			require.NoError(t, err)
+			groupWatcher, err := fakeUserClient.UserV1().Groups().Watch(testCtx, metav1.ListOptions{
+				ResourceVersion: groupList.ResourceVersion,
+			})
 			require.NoError(t, err)
 			defer groupWatcher.Stop()
 
