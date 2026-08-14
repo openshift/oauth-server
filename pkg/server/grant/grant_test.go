@@ -392,6 +392,88 @@ func TestGrant(t *testing.T) {
 			ExpectStatusCode: 302,
 			ExpectRedirect:   "/authorize?error=access_denied",
 		},
+
+		"reject open redirect on approve": {
+			CSRF:           &csrf.FakeCSRF{Token: "test"},
+			Auth:           goodAuth("username"),
+			ClientRegistry: goodClientRegistry("myclient", []string{"myredirect"}, []string{"myscope1", "myscope2"}),
+			AuthRegistry:   emptyAuthRegistry(),
+			Path:           "/grant",
+			PostValues: url.Values{
+				"approve":      {"true"},
+				"client_id":    {"myclient"},
+				"scope":        {"myscope1", "myscope2"},
+				"redirect_uri": {"/myredirect"},
+				"then":         {"https://evil.example.com"},
+				"csrf":         {"test"},
+				"user_name":    {"username"},
+			},
+
+			ExpectStatusCode:        200,
+			ExpectCreatedAuthScopes: []string{"myscope1", "myscope2"},
+			ExpectContains: []string{
+				"granted",
+				"no redirect",
+			},
+		},
+
+		"reject open redirect on deny": {
+			CSRF:           &csrf.FakeCSRF{Token: "test"},
+			Auth:           goodAuth("username"),
+			ClientRegistry: goodClientRegistry("myclient", []string{"myredirect"}, []string{"myscope1", "myscope2"}),
+			AuthRegistry:   emptyAuthRegistry(),
+			Path:           "/grant",
+			PostValues: url.Values{
+				"deny":         {"true"},
+				"client_id":    {"myclient"},
+				"scope":        {"myscope1", "myscope2"},
+				"redirect_uri": {"/myredirect"},
+				"then":         {"https://evil.example.com"},
+				"csrf":         {"test"},
+				"user_name":    {"username"},
+			},
+
+			ExpectStatusCode: 200,
+			ExpectContains: []string{
+				"denied",
+				"no redirect",
+			},
+		},
+
+		"reject open redirect on form display": {
+			CSRF:           &csrf.FakeCSRF{Token: "test"},
+			Auth:           goodAuth("username"),
+			ClientRegistry: goodClientRegistry("myclient", []string{"myredirect"}, []string{"myscope1", "myscope2"}),
+			AuthRegistry:   emptyAuthRegistry(),
+			Path:           "/grant?client_id=myclient&scope=myscope1%20myscope2&redirect_uri=/myredirect&then=https://evil.example.com",
+
+			ExpectStatusCode: 200,
+			ExpectContains:   []string{"Invalid redirect"},
+		},
+
+		"reject protocol-relative redirect on approve": {
+			CSRF:           &csrf.FakeCSRF{Token: "test"},
+			Auth:           goodAuth("username"),
+			ClientRegistry: goodClientRegistry("myclient", []string{"myredirect"}, []string{"myscope1", "myscope2"}),
+			AuthRegistry:   emptyAuthRegistry(),
+			Path:           "/grant",
+			PostValues: url.Values{
+				"approve":      {"true"},
+				"client_id":    {"myclient"},
+				"scope":        {"myscope1", "myscope2"},
+				"redirect_uri": {"/myredirect"},
+				"then":         {"//evil.example.com/path"},
+				"csrf":         {"test"},
+				"user_name":    {"username"},
+			},
+
+			ExpectStatusCode:        200,
+			ExpectCreatedAuthScopes: []string{"myscope1", "myscope2"},
+			ExpectContains: []string{
+				"granted",
+				"no redirect",
+			},
+		},
 	}
 
 	for k, testCase := range testCases {
