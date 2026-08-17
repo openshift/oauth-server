@@ -246,6 +246,35 @@ func TestUserGroupsMapper_removeUserFromGroup(t *testing.T) {
 			expectEvent:   true,
 		},
 		{
+			// Case: generated sole-member group with no current-IdP sync annotation
+			// must not be deleted (old code deleted before the sync guard).
+			name:          "last user on generated group w/o synced annotation -> do nothing",
+			username:      "user1",
+			group:         removeSyncedKeyFromGroup(createGroupWithUsers(testGroupName, "user1"), testIDPName),
+			expectedGroup: removeSyncedKeyFromGroup(createGroupWithUsers(testGroupName, "user1"), testIDPName),
+			expectEvent:   false,
+		},
+		{
+			// Regression for https://github.com/openshift/oauth-server/issues/240:
+			// a generated sole-member group created/synced by another IdP must not
+			// be deleted when the current IdP processes the same user.
+			name:          "last user on generated group synced by another IdP -> do nothing",
+			username:      "user1",
+			group:         createGroupSyncedByIDP(testGroupName, "other-idp", "user1"),
+			expectedGroup: createGroupSyncedByIDP(testGroupName, "other-idp", "user1"),
+			expectEvent:   false,
+		},
+		{
+			// Counterpart to the multi-IdP regression: when the current IdP did
+			// sync the generated sole-member group, cleanup deletion still occurs.
+			name:          "last user on generated group also synced by another IdP -> delete group",
+			username:      "user1",
+			group:         addSyncedAnnotation(createGroupWithUsers(testGroupName, "user1"), "other-idp"),
+			expectedGroup: addSyncedAnnotation(createGroupWithUsers(testGroupName, "user1"), "other-idp"),
+			wantDeletion:  true,
+			expectEvent:   true,
+		},
+		{
 			name:          "user on group w/o synced annotation -> do nothing",
 			username:      "user2",
 			group:         removeSyncedKeyFromGroup(createGroupWithUsers(testGroupName, "user1", "user2", "user3", "user4"), testIDPName),
@@ -410,12 +439,16 @@ func TestUserGroupsMapper_addUserToGroup(t *testing.T) {
 }
 
 func createGroupWithUsers(groupname string, users ...string) *userv1.Group {
+	return createGroupSyncedByIDP(groupname, testIDPName, users...)
+}
+
+func createGroupSyncedByIDP(groupname, idpName string, users ...string) *userv1.Group {
 	return &userv1.Group{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: groupname,
 			Annotations: map[string]string{
-				fmt.Sprintf(groupSyncedKeyFmt, testIDPName): "synced",
-				groupGeneratedKey: "true",
+				fmt.Sprintf(groupSyncedKeyFmt, idpName): "synced",
+				groupGeneratedKey:                       "true",
 			},
 		},
 		Users: users,
@@ -429,6 +462,14 @@ func removeGeneratedKeyFromGroup(g *userv1.Group) *userv1.Group {
 
 func removeSyncedKeyFromGroup(g *userv1.Group, idpName string) *userv1.Group {
 	delete(g.Annotations, fmt.Sprintf(groupSyncedKeyFmt, idpName))
+	return g
+}
+
+func addSyncedAnnotation(g *userv1.Group, idpName string) *userv1.Group {
+	if g.Annotations == nil {
+		g.Annotations = map[string]string{}
+	}
+	g.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] = "synced"
 	return g
 }
 
