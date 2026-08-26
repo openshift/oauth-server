@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -24,6 +25,10 @@ import (
 const (
 	groupGeneratedKey = "oauth.openshift.io/generated"
 	groupSyncedKeyFmt = "oauth.openshift.io/idp.%s"
+
+	// Kubernetes annotation name parts are limited to 63 characters. The
+	// "idp." prefix of groupSyncedKeyFmt consumes 4 of those.
+	maxIDPAnnotationNameLen = 63 - len("idp.")
 )
 
 var _ authapi.UserIdentityMapper = &UserGroupsMapper{}
@@ -138,7 +143,7 @@ func (m *UserGroupsMapper) removeUserFromGroup(idpName, username, group string) 
 	}
 
 	// don't perform any actions on the group if it hasn't been synced for this IdP
-	if updatedGroup.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] != "synced" {
+	if updatedGroup.Annotations[idpAnnotationKey(idpName)] != "synced" {
 		return nil
 	}
 
@@ -167,8 +172,8 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 				ObjectMeta: metav1.ObjectMeta{
 					Name: group,
 					Annotations: map[string]string{
-						fmt.Sprintf(groupSyncedKeyFmt, idpName): "synced",
-						groupGeneratedKey:                       "true",
+						idpAnnotationKey(idpName): "synced",
+						groupGeneratedKey:         "true",
 					},
 				},
 				Users: []string{username},
@@ -188,7 +193,7 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 	var onlyAddAnnotation bool
 	for _, u := range updatedGroup.Users {
 		if u == username {
-			if updatedGroup.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] != "synced" {
+			if updatedGroup.Annotations[idpAnnotationKey(idpName)] != "synced" {
 				onlyAddAnnotation = true
 				break
 			}
@@ -200,7 +205,7 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 	if !onlyAddAnnotation {
 		updatedGroupCopy.Users = append(updatedGroupCopy.Users, username)
 	}
-	updatedGroupCopy.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] = "synced"
+	updatedGroupCopy.Annotations[idpAnnotationKey(idpName)] = "synced"
 
 	_, err = m.groupsClient.Update(context.TODO(), updatedGroupCopy, metav1.UpdateOptions{})
 	return err
@@ -213,4 +218,59 @@ func groupsDiff(existing []*userv1.Group, required sets.String) (toRemove, toAdd
 	}
 
 	return existingNames.Difference(required).UnsortedList(), required.Difference(existingNames).UnsortedList()
+}
+
+// idpAnnotationKey returns the Group annotation used to record that a group
+// was synchronized from the named identity provider.
+//
+// The IdP name is sanitized because Kubernetes annotation keys cannot contain
+// spaces or other characters that are otherwise legal in identity provider
+// names. Login paths already tolerate those names (OCPBUGS-42772, OCPBUGS-44099);
+// group sync must as well (OCPBUGS-56908).
+func idpAnnotationKey(idpName string) string {
+	return fmt.Sprintf(groupSyncedKeyFmt, sanitizeIDPNameForAnnotation(idpName))
+}
+
+// sanitizeIDPNameForAnnotation rewrites an identity provider name so it is
+// valid as the name part of a Kubernetes annotation key (alphanumeric, '-',
+// '_', '.', must start and end with alphanumeric). Invalid characters are
+// replaced with '-' rather than stripped so distinct names stay distinct
+// ("AIF - Keycloak" vs "AIF-Keycloak").
+func sanitizeIDPNameForAnnotation(name string) string {
+	if name == "" {
+		return "unknown"
+	}
+
+	var b strings.Builder
+	b.Grow(len(name))
+	for _, r := range name {
+		if isAnnotationNameRune(r) {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('-')
+		}
+	}
+
+	sanitized := strings.Trim(b.String(), "-_.")
+	if sanitized == "" {
+		return "unknown"
+	}
+	if len(sanitized) > maxIDPAnnotationNameLen {
+		sanitized = strings.TrimRight(sanitized[:maxIDPAnnotationNameLen], "-_.")
+		if sanitized == "" {
+			return "unknown"
+		}
+	}
+	return sanitized
+}
+
+func isAnnotationNameRune(r rune) bool {
+	switch {
+	case r >= 'A' && r <= 'Z', r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+		return true
+	case r == '-' || r == '_' || r == '.':
+		return true
+	default:
+		return false
+	}
 }

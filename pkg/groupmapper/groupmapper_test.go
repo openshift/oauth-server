@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -13,10 +14,14 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/watch"
 	kuser "k8s.io/apiserver/pkg/authentication/user"
 	k8stesting "k8s.io/client-go/testing"
@@ -305,6 +310,127 @@ func TestUserGroupsMapper_removeUserFromGroup(t *testing.T) {
 	}
 }
 
+// prependGroupAnnotationValidation makes the fake client reject Groups whose
+// annotation keys would be rejected by the real Kubernetes API. This is the
+// validation that fails login when an IdP name contains spaces
+// (OCPBUGS-56908).
+func prependGroupAnnotationValidation(fake *fakeuserclient.Clientset) {
+	validate := func(obj runtime.Object) error {
+		group, ok := obj.(*userv1.Group)
+		if !ok {
+			return nil
+		}
+		if errs := apivalidation.ValidateAnnotations(group.Annotations, field.NewPath("metadata", "annotations")); len(errs) > 0 {
+			return apierrors.NewInvalid(schema.GroupKind{Group: userv1.GroupName, Kind: "Group"}, group.Name, errs)
+		}
+		return nil
+	}
+	fake.PrependReactor("create", "groups", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		if err := validate(action.(k8stesting.CreateAction).GetObject()); err != nil {
+			return true, nil, err
+		}
+		return false, nil, nil
+	})
+	fake.PrependReactor("update", "groups", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		if err := validate(action.(k8stesting.UpdateAction).GetObject()); err != nil {
+			return true, nil, err
+		}
+		return false, nil, nil
+	})
+}
+
+func TestSanitizeIDPNameForAnnotation(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "already valid", in: "AIF-Keycloak", want: "AIF-Keycloak"},
+		{name: "customer name with spaces", in: "AIF - Keycloak", want: "AIF---Keycloak"},
+		{name: "Microsoft Entra ID", in: "Microsoft Entra ID", want: "Microsoft-Entra-ID"},
+		{name: "punctuation", in: "my idp #2?", want: "my-idp--2"},
+		{name: "leading and trailing junk", in: " ??foo?? ", want: "foo"},
+		{name: "only illegal characters", in: " ??? ", want: "unknown"},
+		{name: "empty", in: "", want: "unknown"},
+		{name: "dots and underscores kept", in: "my.idp_name", want: "my.idp_name"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, sanitizeIDPNameForAnnotation(tt.in))
+			key := idpAnnotationKey(tt.in)
+			require.Emptyf(t, validation.IsQualifiedName(strings.ToLower(key)), "annotation key %q from IdP name %q is invalid", key, tt.in)
+		})
+	}
+
+	t.Run("long name is truncated to annotation limit", func(t *testing.T) {
+		in := strings.Repeat("a", 80)
+		got := sanitizeIDPNameForAnnotation(in)
+		require.Equal(t, maxIDPAnnotationNameLen, len(got))
+		require.Empty(t, validation.IsQualifiedName(strings.ToLower(idpAnnotationKey(in))))
+	})
+}
+
+func TestAddUserToGroup_IdPNameWithInvalidAnnotationChars(t *testing.T) {
+	const testGroupName = "AIF-DEV"
+
+	tests := []struct {
+		name    string
+		idpName string
+	}{
+		{
+			name:    "spaces around hyphen like customer AIF - Keycloak",
+			idpName: "AIF - Keycloak",
+		},
+		{
+			name:    "spaces in Microsoft Entra ID from original bug",
+			idpName: "Microsoft Entra ID",
+		},
+		{
+			name:    "punctuation from previously allowed IdP names",
+			idpName: "my idp #2?",
+		},
+		{
+			name:    "already valid name is unchanged",
+			idpName: "AIF-Keycloak",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeUserClient := fakeuserclient.NewSimpleClientset()
+			prependGroupAnnotationValidation(fakeUserClient)
+			indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+
+			m := &UserGroupsMapper{
+				groupsLister: userlisterv1.NewGroupLister(indexer),
+				groupsClient: fakeUserClient.UserV1().Groups(),
+			}
+
+			err := m.addUserToGroup(tt.idpName, "user1", testGroupName)
+			require.NoError(t, err, "group sync must succeed for IdP name %q", tt.idpName)
+
+			got, err := fakeUserClient.UserV1().Groups().Get(context.Background(), testGroupName, metav1.GetOptions{})
+			require.NoError(t, err)
+			require.Equal(t, []string{"user1"}, []string(got.Users))
+			require.Equal(t, "true", got.Annotations[groupGeneratedKey])
+
+			for key := range got.Annotations {
+				require.Emptyf(t, validation.IsQualifiedName(strings.ToLower(key)), "annotation key %q is not a valid Kubernetes qualified name", key)
+			}
+
+			syncedKey := idpAnnotationKey(tt.idpName)
+			require.Equal(t, "synced", got.Annotations[syncedKey])
+
+			// A later login must still recognize this IdP's sync annotation so
+			// membership can be removed when the user leaves the group.
+			require.NoError(t, indexer.Add(got))
+			require.NoError(t, m.removeUserFromGroup(tt.idpName, "user1", testGroupName))
+			_, err = fakeUserClient.UserV1().Groups().Get(context.Background(), testGroupName, metav1.GetOptions{})
+			require.True(t, apierrors.IsNotFound(err), "generated group should be deleted when last user is removed, got %v", err)
+		})
+	}
+}
+
 func TestUserGroupsMapper_addUserToGroup(t *testing.T) {
 	const testGroupName = "test-group"
 
@@ -414,8 +540,8 @@ func createGroupWithUsers(groupname string, users ...string) *userv1.Group {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: groupname,
 			Annotations: map[string]string{
-				fmt.Sprintf(groupSyncedKeyFmt, testIDPName): "synced",
-				groupGeneratedKey: "true",
+				idpAnnotationKey(testIDPName): "synced",
+				groupGeneratedKey:             "true",
 			},
 		},
 		Users: users,
@@ -428,7 +554,7 @@ func removeGeneratedKeyFromGroup(g *userv1.Group) *userv1.Group {
 }
 
 func removeSyncedKeyFromGroup(g *userv1.Group, idpName string) *userv1.Group {
-	delete(g.Annotations, fmt.Sprintf(groupSyncedKeyFmt, idpName))
+	delete(g.Annotations, idpAnnotationKey(idpName))
 	return g
 }
 
@@ -591,8 +717,8 @@ func TestAddUserToGroup_DoesNotMutateCachedObject(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testGroupName,
 			Annotations: map[string]string{
-				fmt.Sprintf(groupSyncedKeyFmt, testIDPName): "synced",
-				groupGeneratedKey: "true",
+				idpAnnotationKey(testIDPName): "synced",
+				groupGeneratedKey:             "true",
 			},
 		},
 		Users: users,
