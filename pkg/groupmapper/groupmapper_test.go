@@ -32,6 +32,7 @@ import (
 )
 
 const testIDPName = "test-idp"
+const testIDPNameWithSpaces = "Microsoft Entra ID"
 
 type mockUserMapper struct {
 	userInfo kuser.DefaultInfo
@@ -623,6 +624,83 @@ func TestAddUserToGroup_DoesNotMutateCachedObject(t *testing.T) {
 	fullSlice := cachedGroup.Users[:cap(cachedGroup.Users)]
 	require.Empty(t, fullSlice[2],
 		"backing array was mutated beyond len: slot 2 contains %q", fullSlice[2])
+}
+
+func TestSanitizeIDPName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "no special characters",
+			input:    "my-idp",
+			expected: "my-idp",
+		},
+		{
+			name:     "spaces replaced with dashes",
+			input:    "Microsoft Entra ID",
+			expected: "Microsoft-Entra-ID",
+		},
+		{
+			name:     "multiple spaces",
+			input:    "AIF - Keycloak",
+			expected: "AIF---Keycloak",
+		},
+		{
+			name:     "leading and trailing spaces",
+			input:    " my idp ",
+			expected: "my-idp",
+		},
+		{
+			name:     "dots and underscores preserved",
+			input:    "my.idp_name",
+			expected: "my.idp_name",
+		},
+		{
+			name:     "special characters replaced",
+			input:    "idp@company#1",
+			expected: "idp-company-1",
+		},
+		{
+			name:     "already valid",
+			input:    "simple-idp-123",
+			expected: "simple-idp-123",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sanitizeIDPName(tt.input)
+			if got != tt.expected {
+				t.Errorf("sanitizeIDPName(%q) = %q, want %q", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestAddUserToGroup_IDPNameWithSpaces(t *testing.T) {
+	const testGroupName = "test-group"
+
+	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+	fakeUserClient := fakeuserclient.NewSimpleClientset()
+
+	m := &UserGroupsMapper{
+		groupsLister: userlisterv1.NewGroupLister(indexer),
+		groupsClient: fakeUserClient.UserV1().Groups(),
+	}
+
+	err := m.addUserToGroup(testIDPNameWithSpaces, "user1", testGroupName)
+	require.NoError(t, err)
+
+	group, err := fakeUserClient.UserV1().Groups().Get(context.Background(), testGroupName, metav1.GetOptions{})
+	require.NoError(t, err)
+
+	expectedKey := "oauth.openshift.io/idp.Microsoft-Entra-ID"
+	val, ok := group.Annotations[expectedKey]
+	require.True(t, ok, "expected annotation key %q to exist, got annotations: %v", expectedKey, group.Annotations)
+	require.Equal(t, "synced", val)
+
+	require.Equal(t, []string{"user1"}, []string(group.Users))
 }
 
 var basicGroups = []*userv1.Group{

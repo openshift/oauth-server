@@ -3,7 +3,9 @@ package groupmapper
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -25,6 +27,23 @@ const (
 	groupGeneratedKey = "oauth.openshift.io/generated"
 	groupSyncedKeyFmt = "oauth.openshift.io/idp.%s"
 )
+
+var invalidAnnotationChars = regexp.MustCompile(`[^A-Za-z0-9\-_.]`)
+
+// sanitizeIDPName replaces characters that are invalid in a Kubernetes
+// annotation key name segment with '-' and trims any leading/trailing
+// non-alphanumeric characters so the result satisfies the validation
+// regex: ([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]
+func sanitizeIDPName(name string) string {
+	sanitized := invalidAnnotationChars.ReplaceAllString(name, "-")
+	sanitized = strings.TrimLeft(sanitized, "-_.")
+	sanitized = strings.TrimRight(sanitized, "-_.")
+	return sanitized
+}
+
+func groupSyncedAnnotationKey(idpName string) string {
+	return fmt.Sprintf(groupSyncedKeyFmt, sanitizeIDPName(idpName))
+}
 
 var _ authapi.UserIdentityMapper = &UserGroupsMapper{}
 
@@ -138,7 +157,7 @@ func (m *UserGroupsMapper) removeUserFromGroup(idpName, username, group string) 
 	}
 
 	// don't perform any actions on the group if it hasn't been synced for this IdP
-	if updatedGroup.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] != "synced" {
+	if updatedGroup.Annotations[groupSyncedAnnotationKey(idpName)] != "synced" {
 		return nil
 	}
 
@@ -167,8 +186,8 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 				ObjectMeta: metav1.ObjectMeta{
 					Name: group,
 					Annotations: map[string]string{
-						fmt.Sprintf(groupSyncedKeyFmt, idpName): "synced",
-						groupGeneratedKey:                       "true",
+						groupSyncedAnnotationKey(idpName): "synced",
+						groupGeneratedKey:                 "true",
 					},
 				},
 				Users: []string{username},
@@ -188,7 +207,7 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 	var onlyAddAnnotation bool
 	for _, u := range updatedGroup.Users {
 		if u == username {
-			if updatedGroup.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] != "synced" {
+			if updatedGroup.Annotations[groupSyncedAnnotationKey(idpName)] != "synced" {
 				onlyAddAnnotation = true
 				break
 			}
@@ -200,7 +219,7 @@ func (m *UserGroupsMapper) addUserToGroup(idpName, username, group string) error
 	if !onlyAddAnnotation {
 		updatedGroupCopy.Users = append(updatedGroupCopy.Users, username)
 	}
-	updatedGroupCopy.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] = "synced"
+	updatedGroupCopy.Annotations[groupSyncedAnnotationKey(idpName)] = "synced"
 
 	_, err = m.groupsClient.Update(context.TODO(), updatedGroupCopy, metav1.UpdateOptions{})
 	return err
