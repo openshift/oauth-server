@@ -59,7 +59,8 @@ func TestKeystoneLogin(t *testing.T) {
 			}
 		}
 		var x AuthRequest
-		body, _ := io.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
+		th.AssertNoErr(t, err)
 		th.AssertNoErr(t, json.Unmarshal(body, &x))
 		domainName := x.Auth.Identity.Password.User.Domain.Name
 		userName := x.Auth.Identity.Password.User.Name
