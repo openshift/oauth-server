@@ -9,7 +9,7 @@ require (
 	github.com/gophercloud/gophercloud/v2 v2.4.0
 	github.com/gorilla/sessions v1.2.1
 	github.com/openshift/api v0.0.0-20260727141720-967cc4c36c9b
-	github.com/openshift/build-machinery-go v0.0.0-20251023084048-5d77c1a5e5af
+	github.com/openshift/build-machinery-go v0.0.0-20260902143904-520f675c892b
 	github.com/openshift/client-go v0.0.0-20260723174158-ae2315de9d73
 	github.com/openshift/library-go v0.0.0-20260727154952-0aacacf2673e
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
