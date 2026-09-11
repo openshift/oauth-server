@@ -3,7 +3,7 @@ package login
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -246,7 +246,7 @@ func TestLogin(t *testing.T) {
 		}
 
 		if len(testCase.ExpectContains) > 0 {
-			data, _ := ioutil.ReadAll(resp.Body)
+			data, _ := io.ReadAll(resp.Body)
 			body := string(data)
 			for i := range testCase.ExpectContains {
 				if !strings.Contains(body, testCase.ExpectContains[i]) {
