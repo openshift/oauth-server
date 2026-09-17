@@ -208,7 +208,7 @@ github.com/modern-go/reflect2
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
-# github.com/openshift/api v0.0.0-20260727141720-967cc4c36c9b
+# github.com/openshift/api v0.0.0-20260825094607-13a84dedc5a3
 ## explicit; go 1.26.0
 github.com/openshift/api/config/v1
 github.com/openshift/api/oauth/v1
@@ -227,7 +227,7 @@ github.com/openshift/build-machinery-go/make/targets/golang
 github.com/openshift/build-machinery-go/make/targets/openshift
 github.com/openshift/build-machinery-go/make/targets/openshift/operator
 github.com/openshift/build-machinery-go/scripts
-# github.com/openshift/client-go v0.0.0-20260723174158-ae2315de9d73
+# github.com/openshift/client-go v0.0.0-20260806041845-b74fb348f1e7
 ## explicit; go 1.26.0
 github.com/openshift/client-go/oauth/applyconfigurations
 github.com/openshift/client-go/oauth/applyconfigurations/internal
@@ -254,7 +254,7 @@ github.com/openshift/client-go/user/informers/externalversions/internalinterface
 github.com/openshift/client-go/user/informers/externalversions/user
 github.com/openshift/client-go/user/informers/externalversions/user/v1
 github.com/openshift/client-go/user/listers/user/v1
-# github.com/openshift/library-go v0.0.0-20260727154952-0aacacf2673e
+# github.com/openshift/library-go v0.0.0-20260727154952-0aacacf2673e => github.com/tchap/library-go v0.0.0-20260917133826-d5d67fab4574
 ## explicit; go 1.26.0
 github.com/openshift/library-go/pkg/apiserver/httprequest
 github.com/openshift/library-go/pkg/authentication/bootstrapauthenticator
@@ -263,6 +263,7 @@ github.com/openshift/library-go/pkg/config/client
 github.com/openshift/library-go/pkg/config/helpers
 github.com/openshift/library-go/pkg/config/serving
 github.com/openshift/library-go/pkg/network
+github.com/openshift/library-go/pkg/network/httptransport
 github.com/openshift/library-go/pkg/oauth/oauthdiscovery
 github.com/openshift/library-go/pkg/oauth/oauthserviceaccountclient
 github.com/openshift/library-go/pkg/oauth/usercache
@@ -1411,4 +1412,5 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
+# github.com/openshift/library-go => github.com/tchap/library-go v0.0.0-20260917133826-d5d67fab4574
 # k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20260813192618-a2401c5384e4
