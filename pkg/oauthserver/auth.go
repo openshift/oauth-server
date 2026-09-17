@@ -766,10 +766,12 @@ func (redirectSuccessHandler) AuthenticationSucceeded(user kuser.Info, then stri
 // (which may be empty strings). It delegates to the transport factory set at config init time.
 func (c *OAuthServerConfig) transportFor(ca, certFile, keyFile string) (http.RoundTripper, error) {
 	// transportBuilderFunc may be unset in tests and this seems like an acceptable solution
-	// rather than exporting newStaticRoundTripper and requiring the tests to set the field.
+	// rather than exporting newRoundTripper and requiring the tests to set the field.
 	newTransport := c.ExtraOAuthConfig.transportBuilderFunc
 	if newTransport == nil {
-		newTransport = newStaticRoundTripper
+		newTransport = func(ca, certFile, keyFile string) (http.RoundTripper, error) {
+			return newRoundTripper(nil, ca, certFile, keyFile)
+		}
 	}
 	transport, err := newTransport(ca, certFile, keyFile)
 	if err != nil {

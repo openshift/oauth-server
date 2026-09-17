@@ -8,9 +8,9 @@ require (
 	github.com/go-ldap/ldap/v3 v3.4.11
 	github.com/gophercloud/gophercloud/v2 v2.4.0
 	github.com/gorilla/sessions v1.2.1
-	github.com/openshift/api v0.0.0-20260727141720-967cc4c36c9b
+	github.com/openshift/api v0.0.0-20260825094607-13a84dedc5a3
 	github.com/openshift/build-machinery-go v0.0.0-20260902143904-520f675c892b
-	github.com/openshift/client-go v0.0.0-20260723174158-ae2315de9d73
+	github.com/openshift/client-go v0.0.0-20260806041845-b74fb348f1e7
 	github.com/openshift/library-go v0.0.0-20260727154952-0aacacf2673e
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	github.com/openshift/osincli v0.0.0-20160924135400-fababb0555f2
@@ -129,4 +129,8 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20260813192618-a2401c5384e4 // points to openshift-apiserver-5.0-kubernetes-1.36.2
+replace (
+	// branch: dynamic-http-transport
+	github.com/openshift/library-go => github.com/tchap/library-go v0.0.0-20260917133826-d5d67fab4574
+	k8s.io/apiserver => github.com/openshift/kubernetes-apiserver v0.0.0-20260813192618-a2401c5384e4 // points to openshift-apiserver-5.0-kubernetes-1.36.2
+)
