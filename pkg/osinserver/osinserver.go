@@ -92,7 +92,7 @@ func (s *osinServer) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := osin.OutputJSON(resp, w, r); err != nil {
 		klog.Infof("output JSON through osin: %v", err)
-		http.Error(w, "an internal error occured", http.StatusInternalServerError)
+		http.Error(w, "an internal error occurred", http.StatusInternalServerError)
 	}
 }
 
@@ -112,7 +112,7 @@ func (s *osinServer) handleToken(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := osin.OutputJSON(resp, w, r); err != nil {
 		klog.Infof("output JSON through osin: %v", err)
-		http.Error(w, "an internal error occured", http.StatusInternalServerError)
+		http.Error(w, "an internal error occurred", http.StatusInternalServerError)
 	}
 }
 
@@ -125,6 +125,6 @@ func (s *osinServer) handleInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := osin.OutputJSON(resp, w, r); err != nil {
 		klog.Infof("output JSON through osin: %v", err)
-		http.Error(w, "an internal error occured", http.StatusInternalServerError)
+		http.Error(w, "an internal error occurred", http.StatusInternalServerError)
 	}
 }

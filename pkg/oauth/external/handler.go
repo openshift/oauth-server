@@ -241,7 +241,7 @@ func (h *Handler) handleError(err error, w http.ResponseWriter, req *http.Reques
 	}
 
 	klog.V(4).Infof("handle error failed for err: %v", err)
-	http.Error(w, "An error occured", http.StatusInternalServerError)
+	http.Error(w, "An error occurred", http.StatusInternalServerError)
 }
 
 // defaultState provides default state-building, validation, and parsing to contain CSRF and "then" redirection
