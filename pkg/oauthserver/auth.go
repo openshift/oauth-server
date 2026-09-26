@@ -6,9 +6,9 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 
@@ -685,7 +685,7 @@ func (c *OAuthServerConfig) getAuthenticationRequestHandler() (authenticator.Req
 
 				// Wrap with an x509 verifier
 				if len(provider.ClientCA) > 0 {
-					caData, err := ioutil.ReadFile(provider.ClientCA)
+					caData, err := os.ReadFile(provider.ClientCA)
 					if err != nil {
 						return nil, fmt.Errorf("Error reading %s: %v", provider.ClientCA, err)
 					}

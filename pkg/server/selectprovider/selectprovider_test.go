@@ -1,7 +1,7 @@
 package selectprovider
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -96,7 +96,7 @@ func TestSelectAuthentication(t *testing.T) {
 		}
 
 		if len(testCase.ExpectContains) > 0 {
-			data, _ := ioutil.ReadAll(resp.Body)
+			data, _ := io.ReadAll(resp.Body)
 			body := string(data)
 			for i := range testCase.ExpectContains {
 				if !strings.Contains(body, testCase.ExpectContains[i]) {
