@@ -1,6 +1,9 @@
 package locales
 
 import (
+	"errors"
+	"strings"
+
 	"golang.org/x/text/language"
 	"k8s.io/klog/v2"
 )
@@ -25,6 +28,17 @@ func GetLocale(acceptLangHeader string) Localization {
 }
 
 func getPreferredLang(acceptLangHeader string) string {
+	// OCPBUGS-92015: In order to prevent the Quadratic-time DoS attack
+	// that is possible as documented by https://github.com/golang/go/issues/79684,
+	// return early with the fallback to english if there are more than 1000 underscore and hyphen
+	// characters in the Accept-Language header.
+	// This can be removed once we have updated the language dependency to a version
+	// that has fixed this issue.
+	if strings.Count(acceptLangHeader, "-")+strings.Count(acceptLangHeader, "_") > 1000 {
+		klog.V(5).Infof("Error parsing 'Accept-Language' header, falling back to English language: %v", errors.New("tag list exceeds max length"))
+		return language.English.String()
+	}
+
 	matcher := language.NewMatcher(supportedLangs)
 	userPrefs, _, err := language.ParseAcceptLanguage(acceptLangHeader)
 	if err != nil {
