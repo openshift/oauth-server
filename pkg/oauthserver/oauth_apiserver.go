@@ -290,28 +290,30 @@ type ExtraOAuthConfig struct {
 	postStartHooks map[string]genericapiserver.PostStartHookFunc
 
 	// transportBuilderFunc creates an http.RoundTripper for outbound IdP requests.
-	// Set at init time by configureTransport: when a proxy CA is configured, it produces
-	// dynamicCARoundTrippers that share a single file watcher; otherwise it produces static transports.
+	// Set at init time by configureTransport. Its round trippers share the proxy
+	// CA file watcher when one is configured.
 	transportBuilderFunc func(ca, certFile, keyFile string) (http.RoundTripper, error)
 }
 
 func configureTransport(config *ExtraOAuthConfig, proxyCAFile string) error {
-	if len(proxyCAFile) == 0 {
-		config.transportBuilderFunc = newStaticRoundTripper
-		return nil
-	}
-
-	proxyCAContent, err := dynamiccertificates.NewDynamicCAContentFromFile("proxy-ca", proxyCAFile)
-	if err != nil {
-		return fmt.Errorf("error loading proxy CA from %q: %w", proxyCAFile, err)
+	var proxyCAContent *dynamiccertificates.DynamicFileCAContent
+	if len(proxyCAFile) > 0 {
+		var err error
+		proxyCAContent, err = dynamiccertificates.NewDynamicCAContentFromFile("proxy-ca", proxyCAFile)
+		if err != nil {
+			return fmt.Errorf("error loading proxy CA from %q: %w", proxyCAFile, err)
+		}
 	}
 
 	config.transportBuilderFunc = func(ca, certFile, keyFile string) (http.RoundTripper, error) {
-		return newDynamicCARoundTripper(proxyCAContent, ca, certFile, keyFile)
+		return newRoundTripper(proxyCAContent, ca, certFile, keyFile)
 	}
-	config.postStartHooks["openshift.io-StartProxyCAWatcher"] = func(ctx genericapiserver.PostStartHookContext) error {
-		go proxyCAContent.Run(ctx, 1)
-		return nil
+
+	if proxyCAContent != nil {
+		config.postStartHooks["openshift.io-StartProxyCAWatcher"] = func(ctx genericapiserver.PostStartHookContext) error {
+			go proxyCAContent.Run(ctx, 1)
+			return nil
+		}
 	}
 	return nil
 }
