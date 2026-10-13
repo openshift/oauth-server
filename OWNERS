@@ -1,0 +1,7 @@
+reviewers:
+  - ibihim
+  - liouk
+approvers:
+  - deads2k
+  - ibihim
+component: apiserver-auth
