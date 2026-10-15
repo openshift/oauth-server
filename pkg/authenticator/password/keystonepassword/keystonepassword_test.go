@@ -38,12 +38,12 @@ func (m *TestUserIdentityMapperClaim) UserFor(identityInfo api.UserIdentityInfo)
 var keystoneID string
 
 func TestKeystoneLogin(t *testing.T) {
-	th.SetupHTTP()
-	defer th.TeardownHTTP()
+	fakeServer := th.SetupHTTP()
+	t.Cleanup(fakeServer.Teardown)
 
 	const ID = "0123456789"
 
-	th.Mux.HandleFunc("/v3/auth/tokens", func(w http.ResponseWriter, r *http.Request) {
+	fakeServer.Mux.HandleFunc("/v3/auth/tokens", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("X-Subject-Token", ID)
 		type AuthRequest struct {
 			Auth struct {
@@ -94,7 +94,7 @@ func TestKeystoneLogin(t *testing.T) {
 	// -----Test Claim strategy with enabled Keystone identity-----
 	mapperClaim := TestUserIdentityMapperClaim{map[string]string{}}
 	keystoneID = "initial_keystone_id"
-	keystoneAuth := New("keystone_auth", th.Endpoint(), http.DefaultTransport, "default", &mapperClaim, true)
+	keystoneAuth := New("keystone_auth", fakeServer.Endpoint(), http.DefaultTransport, "default", &mapperClaim, true)
 
 	// 1. User authenticates for the first time, new identity is created
 	_, ok, err := keystoneAuth.AuthenticatePassword(context.TODO(), "testuser", "testpw")
@@ -119,7 +119,7 @@ func TestKeystoneLogin(t *testing.T) {
 	// -----Test Claim strategy with disabled Keystone identity-----
 	mapperClaim = TestUserIdentityMapperClaim{map[string]string{}}
 	keystoneID = "initial_keystone_id"
-	keystoneAuth = New("keystone_auth", th.Endpoint(), http.DefaultTransport, "default", &mapperClaim, false)
+	keystoneAuth = New("keystone_auth", fakeServer.Endpoint(), http.DefaultTransport, "default", &mapperClaim, false)
 
 	// 1. User authenticates for the first time, new identity is created
 	_, ok, err = keystoneAuth.AuthenticatePassword(context.TODO(), "testuser", "testpw")
