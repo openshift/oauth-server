@@ -38,7 +38,6 @@ import (
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
-	"k8s.io/apiserver/pkg/endpoints/filters"
 	"k8s.io/apiserver/pkg/endpoints/handlers/finisher"
 	requestmetrics "k8s.io/apiserver/pkg/endpoints/handlers/metrics"
 	"k8s.io/apiserver/pkg/endpoints/handlers/negotiation"
@@ -72,7 +71,7 @@ func DeleteResource(r rest.GracefulDeleter, allowsOptions bool, scope *RequestSc
 
 		// enforce a timeout of at most requestTimeoutUpperBound (34s) or less if the user-provided
 		// timeout inside the parent context is lower than requestTimeoutUpperBound.
-		ctx, cancel := filters.RequestContextWithUpperBoundOrWorkAroundOurBrokenCaseWhereTimeoutWasNotAppliedYet(req, requestTimeoutUpperBound)
+		ctx, cancel := context.WithTimeout(ctx, requestTimeoutUpperBound)
 		defer cancel()
 
 		ctx = request.WithNamespace(ctx, namespace)
@@ -222,11 +221,9 @@ func DeleteCollection(r rest.CollectionDeleter, checkBody bool, scope *RequestSc
 			return
 		}
 
-		// enforce a timeout of at most requestTimeoutUpperBound (34s) or less if the user-provided
-		// timeout inside the parent context is lower than requestTimeoutUpperBound.
-		ctx, cancel := filters.RequestContextWithUpperBoundOrWorkAroundOurBrokenCaseWhereTimeoutWasNotAppliedYet(req, requestTimeoutUpperBound)
-		defer cancel()
-
+		// DELETECOLLECTION can be a lengthy operation,
+		// we should not impose any 34s timeout here.
+		// NOTE: This is similar to LIST which does not enforce a 34s timeout.
 		ctx = request.WithNamespace(ctx, namespace)
 
 		outputMediaType, _, err := negotiation.NegotiateOutputMediaType(req, scope.Serializer, scope)
@@ -357,7 +354,7 @@ func DeleteCollection(r rest.CollectionDeleter, checkBody bool, scope *RequestSc
 // authorizeUnsafeDelete ensures that the user has permission to do
 // 'unsafe-delete-ignore-read-errors' on the resource being deleted when
 // ignoreStoreReadErrorWithClusterBreakingPotential is enabled
-func authorizeUnsafeDelete(ctx context.Context, attr admission.Attributes, authz authorizer.Authorizer) (err error) {
+func authorizeUnsafeDelete(ctx context.Context, attr admission.Attributes, authz authorizer.UnconditionalAuthorizer) (err error) {
 	if attr.GetOperation() != admission.Delete || attr.GetOperationOptions() == nil {
 		return nil
 	}
@@ -392,25 +389,23 @@ func authorizeUnsafeDelete(ctx context.Context, attr admission.Attributes, authz
 	}
 	// TODO: can't use ResourceAttributesFrom from k8s.io/kubernetes/pkg/registry/authorization/util
 	// due to prevent staging --> k8s.io/kubernetes dep issue
-	if utilfeature.DefaultFeatureGate.Enabled(features.AuthorizeWithSelectors) {
-		if len(requestInfo.FieldSelector) > 0 {
-			fieldSelector, err := fields.ParseSelector(requestInfo.FieldSelector)
-			if err != nil {
-				record.FieldSelectorRequirements, record.FieldSelectorParsingErr = nil, err
-			} else {
-				if requirements := fieldSelector.Requirements(); len(requirements) > 0 {
-					record.FieldSelectorRequirements, record.FieldSelectorParsingErr = fieldSelector.Requirements(), nil
-				}
+	if len(requestInfo.FieldSelector) > 0 {
+		fieldSelector, err := fields.ParseSelector(requestInfo.FieldSelector)
+		if err != nil {
+			record.FieldSelectorRequirements, record.FieldSelectorParsingErr = nil, err
+		} else {
+			if requirements := fieldSelector.Requirements(); len(requirements) > 0 {
+				record.FieldSelectorRequirements, record.FieldSelectorParsingErr = fieldSelector.Requirements(), nil
 			}
 		}
-		if len(requestInfo.LabelSelector) > 0 {
-			labelSelector, err := labels.Parse(requestInfo.LabelSelector)
-			if err != nil {
-				record.LabelSelectorRequirements, record.LabelSelectorParsingErr = nil, err
-			} else {
-				if requirements, _ /*selectable*/ := labelSelector.Requirements(); len(requirements) > 0 {
-					record.LabelSelectorRequirements, record.LabelSelectorParsingErr = requirements, nil
-				}
+	}
+	if len(requestInfo.LabelSelector) > 0 {
+		labelSelector, err := labels.Parse(requestInfo.LabelSelector)
+		if err != nil {
+			record.LabelSelectorRequirements, record.LabelSelectorParsingErr = nil, err
+		} else {
+			if requirements, _ /*selectable*/ := labelSelector.Requirements(); len(requirements) > 0 {
+				record.LabelSelectorRequirements, record.LabelSelectorParsingErr = requirements, nil
 			}
 		}
 	}

@@ -1,7 +1,9 @@
 package ldap
 
 import (
+	"errors"
 	"fmt"
+
 	ber "github.com/go-asn1-ber/asn1-ber"
 )
 
@@ -35,6 +37,10 @@ func NewDelRequest(DN string, Controls []Control) *DelRequest {
 
 // Del executes the given delete request
 func (l *Conn) Del(delRequest *DelRequest) error {
+	if delRequest == nil {
+		return NewError(ErrorNetwork, errors.New("DelRequest cannot be nil"))
+	}
+
 	msgCtx, err := l.doRequest(delRequest)
 	if err != nil {
 		return err
@@ -46,13 +52,16 @@ func (l *Conn) Del(delRequest *DelRequest) error {
 		return err
 	}
 
-	if packet.Children[1].Tag == ApplicationDelResponse {
-		err := GetLDAPError(packet)
-		if err != nil {
+	protocolOp, err := packetChild(packet, 1)
+	if err != nil {
+		return err
+	}
+	if protocolOp.Tag == ApplicationDelResponse {
+		if err := GetLDAPError(packet); err != nil {
 			return err
 		}
 	} else {
-		return fmt.Errorf("ldap: unexpected response: %d", packet.Children[1].Tag)
+		return fmt.Errorf("ldap: unexpected response: %d", protocolOp.Tag)
 	}
 
 	return nil
