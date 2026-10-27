@@ -210,6 +210,8 @@ func renderForm(w io.Writer, data formData) {
 	}
 }
 
+// cssStyle includes a self-contained warning styled after the router error page:
+// https://github.com/openshift/router/blob/main/images/router/haproxy/conf/error-page-404.http
 const cssStyle = `
 <style>
 	body     { font-family: sans-serif; font-size: 14px; margin: 2em 2%; background-color: #F9F9F9; }
@@ -227,6 +229,62 @@ const cssStyle = `
 	button:hover { text-decoration: underline; cursor: pointer; }
 	@media (min-width: 768px) {
 		.nowrap { white-space: nowrap; }
+	}
+
+	.alert-warning {
+		display: grid;
+		grid-template-columns: 24px minmax(0, 1fr);
+		grid-template-areas:
+			"icon title"
+			". description";
+		column-gap: 11px;
+		row-gap: 10px;
+		margin-top: 30px;
+		margin-bottom: 1.5em;
+		padding: 30px;
+		color: #333;
+		background-color: #fff8e6;
+		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-size: 16px;
+		line-height: 1.66666667;
+	}
+	.alert-warning-icon {
+		grid-area: icon;
+		margin-top: 4px;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		background-color: #dca614;
+		color: #fff;
+		font: bold 16px/24px sans-serif;
+		text-align: center;
+	}
+	.alert-warning-title {
+		grid-area: title;
+		margin: 0;
+		font-size: 20px;
+		font-weight: 400;
+		overflow-wrap: anywhere;
+	}
+	.alert-warning-description {
+		grid-area: description;
+		margin: 0;
+		overflow-wrap: anywhere;
+	}
+	.alert-warning .command {
+		font-family: Menlo, Monaco, Consolas, monospace;
+		font-size: 0.95em;
+	}
+	.screen-reader {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 </style>
 `
@@ -315,6 +373,17 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
 
 <br><br>
 <a href="{{.RequestURL}}">Request another token</a>
+
+{{ if not .Error }}
+  <div class="alert-warning" aria-label="Warning alert">
+    <span class="alert-warning-icon" aria-hidden="true">!</span>
+    <h4 class="alert-warning-title">
+      <span class="screen-reader">Warning alert:</span>
+      This token can be exposed in CLI logs
+    </h4>
+    <p class="alert-warning-description">Using it on the command line, such as with <span class="command">oc login --token</span>, can leave the token in shell history, process listings, and CLI logs.</p>
+  </div>
+{{ end }}
 
 {{ if .LogoutURL }}
   <br><br>
