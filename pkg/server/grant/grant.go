@@ -121,6 +121,10 @@ func (l *Grant) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (l *Grant) handleForm(user user.Info, w http.ResponseWriter, req *http.Request) {
 	q := req.URL.Query()
 	then := q.Get(thenParam)
+	if len(then) > 0 && !redirect.IsServerRelativeURL(then) {
+		l.failed("Invalid redirect", w, req)
+		return
+	}
 	clientID := q.Get(clientIDParam)
 	scopes := scopecovers.Split(q.Get(scopeParam))
 	redirectURI := q.Get(redirectURIParam)
@@ -202,6 +206,9 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 	}
 
 	then := req.PostFormValue(thenParam)
+	if !redirect.IsServerRelativeURL(then) {
+		then = ""
+	}
 	scopes := scopecovers.Join(req.PostForm[scopeParam])
 	username := req.PostFormValue(userNameParam)
 
