@@ -288,6 +288,9 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
   <h2>Your API token is</h2>
   <pre id="token"></pre>
 
+  <h2>Log in without a token (recommended)</h2>
+  <pre id="loginWeb"></pre>
+
   <h2>Log in with this token</h2>
   <pre id="login"></pre>
 
@@ -297,6 +300,12 @@ var tokenTemplate = template.Must(template.New("tokenTemplate").Parse(
   <script>
     codeSnippet(document.getElementById('token'), [
       '{{.AccessTokenJSStr}}',
+    ]);
+
+    codeSnippet(document.getElementById('loginWeb'), [
+      'oc login',
+      '--web',
+      '--server={{.PublicMasterURLJSStr}}',
     ]);
 
     codeSnippet(document.getElementById('login'), [
