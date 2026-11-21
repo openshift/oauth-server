@@ -133,13 +133,13 @@ func (m *UserGroupsMapper) removeUserFromGroup(idpName, username, group string) 
 		return nil
 	}
 
-	if len(updatedGroup.Users) == 1 && updatedGroup.Users[0] == username && updatedGroup.Annotations[groupGeneratedKey] == "true" {
-		return m.groupsClient.Delete(context.TODO(), group, metav1.DeleteOptions{})
-	}
-
 	// don't perform any actions on the group if it hasn't been synced for this IdP
 	if updatedGroup.Annotations[fmt.Sprintf(groupSyncedKeyFmt, idpName)] != "synced" {
 		return nil
+	}
+
+	if len(updatedGroup.Users) == 1 && updatedGroup.Users[0] == username && updatedGroup.Annotations[groupGeneratedKey] == "true" {
+		return m.groupsClient.Delete(context.TODO(), group, metav1.DeleteOptions{})
 	}
 
 	// find the user and remove it from the slice
