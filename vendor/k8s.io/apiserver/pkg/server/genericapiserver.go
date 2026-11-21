@@ -51,6 +51,7 @@ import (
 	discoveryendpoint "k8s.io/apiserver/pkg/endpoints/discovery/aggregated"
 	"k8s.io/apiserver/pkg/features"
 	"k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/apiserver/pkg/server/flagz"
 	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/apiserver/pkg/server/routes"
 	"k8s.io/apiserver/pkg/server/statusz"
@@ -114,6 +115,9 @@ type GenericAPIServer struct {
 
 	// LoopbackClientConfig is a config for a privileged loopback connection to the API server
 	LoopbackClientConfig *restclient.Config
+
+	// Flagz is used to set up flagz endpoint.
+	Flagz flagz.Reader
 
 	// minRequestTimeout is how short the request timeout can be.  This is used to build the RESTHandler
 	minRequestTimeout time.Duration
@@ -212,7 +216,7 @@ type GenericAPIServer struct {
 	// Authorizer determines whether a user is allowed to make a certain request. The Handler does a preliminary
 	// authorization check using the request URI but it may be necessary to make additional checks, such as in
 	// the create-on-update case
-	Authorizer authorizer.Authorizer
+	Authorizer authorizer.UnconditionalAuthorizer
 
 	// EquivalentResourceRegistry provides information about resources equivalent to a given resource,
 	// and the kind associated with a given resource. As resources are installed, they are registered here.
@@ -468,8 +472,15 @@ func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
 	}
 	s.installReadyz()
 
+	componentName := "apiserver"
+	if utilfeature.DefaultFeatureGate.Enabled(zpagesfeatures.ComponentFlagz) {
+		if s.Flagz != nil {
+			flagz.Install(s.Handler.NonGoRestfulMux, componentName, s.Flagz)
+		}
+	}
+	// statusz is installed last so that it can list all the paths that have been registered
 	if utilfeature.DefaultFeatureGate.Enabled(zpagesfeatures.ComponentStatusz) {
-		statusz.Install(s.Handler.NonGoRestfulMux, "apiserver", statusz.NewRegistry(s.EffectiveVersion, statusz.WithListedPaths(s.ListedPaths())))
+		statusz.Install(s.Handler.NonGoRestfulMux, componentName, statusz.NewRegistry(s.EffectiveVersion, statusz.WithListedPaths(s.ListedPaths())))
 	}
 
 	return preparedGenericAPIServer{s}
@@ -538,7 +549,7 @@ func (s preparedGenericAPIServer) RunWithContext(ctx context.Context) error {
 	// If UDS profiling is enabled, start a local http server listening on that socket
 	if s.UnprotectedDebugSocket != nil {
 		go func() {
-			defer utilruntime.HandleCrash()
+			defer utilruntime.HandleCrashWithContext(ctx)
 			klog.Error(s.UnprotectedDebugSocket.RunWithContext(ctx))
 		}()
 	}
@@ -1020,15 +1031,12 @@ func (s *GenericAPIServer) newAPIGroupVersion(apiGroupInfo *APIGroupInfo, groupV
 // NewDefaultAPIGroupInfo returns an APIGroupInfo stubbed with "normal" values
 // exposed for easier composition from other packages
 func NewDefaultAPIGroupInfo(group string, scheme *runtime.Scheme, parameterCodec runtime.ParameterCodec, codecs serializer.CodecFactory) APIGroupInfo {
-	opts := []serializer.CodecFactoryOptionsMutator{}
+	opts := []serializer.CodecFactoryOptionsMutator{
+		serializer.WithStreamingCollectionEncodingToJSON(),
+		serializer.WithStreamingCollectionEncodingToProtobuf(),
+	}
 	if utilfeature.DefaultFeatureGate.Enabled(features.CBORServingAndStorage) {
 		opts = append(opts, serializer.WithSerializer(cbor.NewSerializerInfo))
-	}
-	if utilfeature.DefaultFeatureGate.Enabled(features.StreamingCollectionEncodingToJSON) {
-		opts = append(opts, serializer.WithStreamingCollectionEncodingToJSON())
-	}
-	if utilfeature.DefaultFeatureGate.Enabled(features.StreamingCollectionEncodingToProtobuf) {
-		opts = append(opts, serializer.WithStreamingCollectionEncodingToProtobuf())
 	}
 	if len(opts) != 0 {
 		codecs = serializer.NewCodecFactory(scheme, opts...)

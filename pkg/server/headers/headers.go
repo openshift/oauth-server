@@ -16,7 +16,6 @@ var standardHeaders = map[string]string{
 	// Add other basic security hygiene headers
 	"X-Content-Type-Options": "nosniff",
 	"X-DNS-Prefetch-Control": "off",
-	"X-XSS-Protection":       "1; mode=block",
 }
 
 func WithStandardHeaders(handler http.Handler) http.Handler {
