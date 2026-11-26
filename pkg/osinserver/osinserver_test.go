@@ -140,3 +140,76 @@ func TestAuthorizeStartFlow(t *testing.T) {
 		t.Errorf("unexpected empty access token: %#v", token)
 	}
 }
+
+// TestNoDuplicateHeadersInErrorResponse verifies that Cache-Control, Pragma, and Expires headers appear exactly once in OAuth error responses.
+func TestNoDuplicateHeadersInErrorResponse(t *testing.T) {
+	storage := teststorage.New()
+
+	// Create OAuth server
+	oauthServer := New(
+		NewDefaultServerConfig(),
+		storage,
+		AuthorizeHandlerFunc(func(ar *osin.AuthorizeRequest, resp *osin.Response, w http.ResponseWriter) (bool, error) {
+			ar.Authorized = true
+			return false, nil
+		}),
+		AccessHandlerFunc(func(ar *osin.AccessRequest, w http.ResponseWriter) error {
+			ar.Authorized = true
+			ar.GenerateRefresh = false
+			return nil
+		}),
+		NewDefaultErrorHandler(),
+	)
+
+	mux := http.NewServeMux()
+	oauthServer.Install(mux, "")
+	handler := withStandardHeadersForTest(mux)
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	resp, err := http.Post(
+		server.URL+"/token",
+		"application/x-www-form-urlencoded",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error making request: %v", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("failed to close response body: %v", err)
+		}
+	}()
+
+	// Check headers
+	t.Logf("Response Status: %s", resp.Status)
+	t.Logf("All Headers: %v", resp.Header)
+
+	headers := []string{"Cache-Control", "Pragma", "Expires"}
+
+	for _, headerName := range headers {
+		values := resp.Header.Values(headerName)
+		t.Logf("Header '%s' has %d value(s): %v", headerName, len(values), values)
+
+		if len(values) != 1 {
+			t.Errorf("Header '%s' should appear exactly once, but found %d occurrences: %v",
+				headerName, len(values), values)
+		}
+	}
+}
+
+// Helper to simulate standard headers middleware
+func withStandardHeadersForTest(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
+		h.Set("Pragma", "no-cache")
+		h.Set("Expires", "0")
+		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-DNS-Prefetch-Control", "off")
+
+		handler.ServeHTTP(w, r)
+	})
+}

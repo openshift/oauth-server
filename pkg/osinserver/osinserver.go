@@ -54,6 +54,14 @@ func (s *osinServer) Install(mux oauthserver.Mux, prefix string) {
 	mux.HandleFunc(path.Join(prefix, oauthdiscovery.InfoPath), s.handleInfo)
 }
 
+// removeDuplicateHeaders clears headers from the HTTP ResponseWriter that will be re-added by osin.OutputJSON(). This prevents duplicate Cache-Control, Pragma, and Expires headers in OAuth error responses.
+// we ensure only OSIN's OAuth-compliant values appear in the final response.
+func removeDuplicateHeaders(w http.ResponseWriter) {
+	w.Header().Del("Cache-Control")
+	w.Header().Del("Pragma")
+	w.Header().Del("Expires")
+}
+
 func (s *osinServer) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	resp := s.server.NewResponse()
 	defer resp.Close()
@@ -90,6 +98,9 @@ func (s *osinServer) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	if resp.IsError && resp.InternalError != nil {
 		utilruntime.HandleError(fmt.Errorf("internal error: %s", resp.InternalError))
 	}
+
+	removeDuplicateHeaders(w)
+
 	if err := osin.OutputJSON(resp, w, r); err != nil {
 		klog.Infof("output JSON through osin: %v", err)
 		http.Error(w, "an internal error occured", http.StatusInternalServerError)
@@ -110,6 +121,9 @@ func (s *osinServer) handleToken(w http.ResponseWriter, r *http.Request) {
 	if resp.IsError && resp.InternalError != nil {
 		utilruntime.HandleError(fmt.Errorf("internal error: %s", resp.InternalError))
 	}
+
+	removeDuplicateHeaders(w)
+
 	if err := osin.OutputJSON(resp, w, r); err != nil {
 		klog.Infof("output JSON through osin: %v", err)
 		http.Error(w, "an internal error occured", http.StatusInternalServerError)
@@ -123,6 +137,9 @@ func (s *osinServer) handleInfo(w http.ResponseWriter, r *http.Request) {
 	if ir := s.server.HandleInfoRequest(resp, r); ir != nil {
 		s.server.FinishInfoRequest(resp, r, ir)
 	}
+
+	removeDuplicateHeaders(w)
+
 	if err := osin.OutputJSON(resp, w, r); err != nil {
 		klog.Infof("output JSON through osin: %v", err)
 		http.Error(w, "an internal error occured", http.StatusInternalServerError)
